@@ -28,7 +28,7 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 from src.bot.utils.constants import (
-        MSG_WELCOME_NEW_USER,
+    MSG_WELCOME_NEW_USER,
     MSG_WELCOME_UNKNOWN,
 )
 from src.bot.utils.formatting import escape_html

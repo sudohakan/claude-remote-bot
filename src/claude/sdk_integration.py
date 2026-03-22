@@ -224,8 +224,12 @@ class ClaudeSDKRunner:
                 raise ClaudeAuthError(f"Claude auth failed: {err}")
             # Stale session — retry without --resume
             if "no conversation found" in err.lower() and session_id:
-                logger.warning("Stale session, retrying without resume", session_id=session_id)
-                return await self._run_cli(prompt, working_dir, None, full_access=full_access)
+                logger.warning(
+                    "Stale session, retrying without resume", session_id=session_id
+                )
+                return await self._run_cli(
+                    prompt, working_dir, None, full_access=full_access
+                )
             raise ClaudeProcessError(f"Claude CLI error (rc={proc.returncode}): {err}")
 
         return ClaudeResponse(
