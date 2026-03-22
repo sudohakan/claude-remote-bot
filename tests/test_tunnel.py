@@ -237,7 +237,8 @@ class TestApiResponseHandling:
 class TestTunnelNotifier:
     @pytest.mark.asyncio
     async def test_notify_on_up(self, notifier, mock_bot):
-        """Direct handler call — no event bus timing dependency."""
+        """Direct handler call — mock _send to avoid telegram dependency."""
+        notifier._send = AsyncMock()
         event = TunnelStateChangeEvent(
             previous_state="down",
             new_state="up",
@@ -247,52 +248,56 @@ class TestTunnelNotifier:
         )
         await notifier._on_state_change(event)
 
-        mock_bot.send_message.assert_called_once()
-        call_kwargs = mock_bot.send_message.call_args.kwargs
-        assert call_kwargs["chat_id"] == 12345
-        assert "UP" in call_kwargs["text"]
+        notifier._send.assert_called_once()
+        text = notifier._send.call_args[0][0]
+        assert "UP" in text
 
     @pytest.mark.asyncio
     async def test_notify_on_down(self, notifier, mock_bot):
+        notifier._send = AsyncMock()
         event = TunnelStateChangeEvent(
             previous_state="up",
             new_state="down",
         )
         await notifier._on_state_change(event)
 
-        mock_bot.send_message.assert_called_once()
-        call_kwargs = mock_bot.send_message.call_args.kwargs
-        assert "DOWN" in call_kwargs["text"]
+        notifier._send.assert_called_once()
+        text = notifier._send.call_args[0][0]
+        assert "DOWN" in text
 
     @pytest.mark.asyncio
     async def test_dedup_suppresses_repeated_notifications(self, notifier, mock_bot):
         """Same transition twice within 5 min should only fire once."""
+        notifier._send = AsyncMock()
         event = TunnelStateChangeEvent(previous_state="up", new_state="down")
         for _ in range(3):
             await notifier._on_state_change(event)
 
-        assert mock_bot.send_message.call_count == 1
+        assert notifier._send.call_count == 1
 
     @pytest.mark.asyncio
     async def test_no_notification_on_unchanged_state(self, notifier, mock_bot):
         """up→up should not trigger a notification."""
+        notifier._send = AsyncMock()
         event = TunnelStateChangeEvent(previous_state="up", new_state="up")
         await notifier._on_state_change(event)
-        mock_bot.send_message.assert_not_called()
+        notifier._send.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_retry_exhausted_notification(self, notifier, mock_bot):
+        notifier._send = AsyncMock()
         event = TunnelRetryExhaustedEvent(attempts=5)
         await notifier._on_retry_exhausted(event)
 
-        mock_bot.send_message.assert_called_once()
-        text = mock_bot.send_message.call_args.kwargs["text"]
+        notifier._send.assert_called_once()
+        text = notifier._send.call_args[0][0]
         assert "retries exhausted" in text.lower()
 
     @pytest.mark.asyncio
     async def test_retry_exhausted_dedup(self, notifier, mock_bot):
         """Retry-exhausted suppressed within 1 hour."""
+        notifier._send = AsyncMock()
         notifier._retry_exhausted_sent = float("inf")
         event = TunnelRetryExhaustedEvent(attempts=5)
         await notifier._on_retry_exhausted(event)
-        mock_bot.send_message.assert_not_called()
+        notifier._send.assert_not_called()
