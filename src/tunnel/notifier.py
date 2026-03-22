@@ -49,11 +49,9 @@ class TunnelNotifier:
 
     # ── Handlers ──────────────────────────────────────────────────────────────
 
-    async def _on_state_change(self, event: Event) -> None:
-        prev = getattr(event, "previous_state", None)
-        new = getattr(event, "new_state", None)
-        if prev is None or new is None:
-            return
+    async def _on_state_change(self, event) -> None:
+        prev = event.previous_state
+        new = event.new_state
 
         # Only interesting transitions
         if new not in ("up", "down") or prev == new:
@@ -69,7 +67,7 @@ class TunnelNotifier:
         msg = self._format_state_change(event)
         await self._send(msg)
 
-    async def _on_retry_exhausted(self, event: Event) -> None:
+    async def _on_retry_exhausted(self, event) -> None:
         now = time.monotonic()
         if now - self._retry_exhausted_sent < _RETRY_EXHAUSTED_WINDOW:
             logger.debug("Retry-exhausted notification suppressed (dedup)")
