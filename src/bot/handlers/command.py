@@ -28,8 +28,7 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 from src.bot.utils.constants import (
-    BOT_VERSION,
-    MSG_WELCOME_NEW_USER,
+        MSG_WELCOME_NEW_USER,
     MSG_WELCOME_UNKNOWN,
 )
 from src.bot.utils.formatting import escape_html
@@ -65,7 +64,7 @@ async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     # Admin always welcome
     if settings and user.id == settings.admin_telegram_id:
         await update.message.reply_text(
-            f"Welcome back, admin.\nBot v{BOT_VERSION} running.\nUse /help for commands.",
+            "Welcome back, admin.\nUse /help for commands.",
             parse_mode="HTML",
         )
         return
@@ -142,7 +141,7 @@ async def cmd_help(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         "/broadcast &lt;msg&gt; — Message all users"
     )
 
-    text = f"<b>claude-remote-bot v{BOT_VERSION}</b>\n\n" + user_commands
+    text = "<b>Available Commands</b>\n\n" + user_commands
     if is_admin:
         text += admin_commands
 
@@ -168,7 +167,7 @@ async def cmd_about(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     feature_str = ", ".join(features) if features else "base mode"
 
     text = (
-        f"<b>claude-remote-bot v{BOT_VERSION}</b>\n\n"
+        "<b>Claude Remote Bot</b>\n\n"
         "<b>Architecture:</b>\n"
         "• Python 3.12 + python-telegram-bot 22\n"
         "• anthropic SDK + claude-agent-sdk\n"
@@ -225,7 +224,7 @@ async def cmd_status(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     claude = ctx.bot_data.get("claude_facade")
     user = update.effective_user
 
-    lines = [f"<b>Bot Status</b>  v{BOT_VERSION}"]
+    lines = ["<b>Bot Status</b>"]
 
     if storage:
         db_ok = await storage.health_check()
