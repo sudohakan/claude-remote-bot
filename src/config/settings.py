@@ -5,7 +5,7 @@ All secrets are stored as SecretStr — access via .get_secret_value().
 """
 
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict

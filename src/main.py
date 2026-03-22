@@ -9,7 +9,6 @@ import asyncio
 import logging
 import signal
 from pathlib import Path
-from typing import Optional
 
 import structlog
 

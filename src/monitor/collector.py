@@ -15,7 +15,6 @@ Stores a rolling 24-hour buffer in data/metrics.json.
 
 import asyncio
 import json
-import subprocess
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path

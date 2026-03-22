@@ -39,7 +39,7 @@ async def handle_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None
         return
 
     access = ctx.bot_data.get("access_manager")
-    settings = ctx.bot_data.get("settings")
+    ctx.bot_data.get("settings")
     access_level = "sandbox"
     if access:
         level = await access.get_access_level(user.id)

@@ -10,7 +10,6 @@ Anti-spam guarantees:
 """
 
 import time
-from typing import Optional
 
 import structlog
 from telegram import Bot
@@ -71,19 +70,16 @@ class TunnelNotifier:
         await self._send(msg)
 
     async def _on_retry_exhausted(self, event: Event) -> None:
-        attempts = getattr(event, "attempts", None)
-        if attempts is None:
-            return
-
         now = time.monotonic()
         if now - self._retry_exhausted_sent < _RETRY_EXHAUSTED_WINDOW:
             logger.debug("Retry-exhausted notification suppressed (dedup)")
             return
 
         self._retry_exhausted_sent = now
+        attempts = getattr(event, "attempts", "?")
         msg = (
             f"<b>Tunnel: retries exhausted</b>\n\n"
-            f"ngrok failed to restart after {event.attempts} attempts.\n"
+            f"ngrok failed to restart after {attempts} attempts.\n"
             "Manual intervention required."
         )
         await self._send(msg)

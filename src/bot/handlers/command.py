@@ -28,11 +28,9 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 from src.bot.utils.constants import (
-    ACCESS_LABELS,
     BOT_VERSION,
     MSG_WELCOME_NEW_USER,
     MSG_WELCOME_UNKNOWN,
-    ROLE_LABELS,
 )
 from src.bot.utils.formatting import escape_html
 

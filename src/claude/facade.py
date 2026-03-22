@@ -4,7 +4,6 @@ The facade wires together SDK runner, session manager, cost tracker,
 and sanitizer into a single call surface.
 """
 
-from pathlib import Path
 from typing import Optional
 
 import structlog

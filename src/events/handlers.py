@@ -8,7 +8,7 @@ event bus independently.
 """
 
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, List
 
 import structlog
 

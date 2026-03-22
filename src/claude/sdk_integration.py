@@ -9,7 +9,6 @@ Enforces:
 
 import asyncio
 import os
-import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -82,7 +81,7 @@ class ClaudeSDKRunner:
                     timeout=self._timeout,
                 )
             except asyncio.TimeoutError:
-                duration_ms = int((asyncio.get_event_loop().time() - start) * 1000)
+                int((asyncio.get_event_loop().time() - start) * 1000)
                 raise ClaudeTimeoutError(
                     f"Claude timed out after {self._timeout}s"
                 ) from None

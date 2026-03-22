@@ -7,7 +7,7 @@ Formats metrics into human-readable Telegram messages:
 """
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Optional
 
 from .collector import Metrics, MetricsCollector
 
