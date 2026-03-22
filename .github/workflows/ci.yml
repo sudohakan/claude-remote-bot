@@ -1,0 +1,115 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+jobs:
+  lint:
+    name: Lint (black, isort, flake8, mypy)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install black isort flake8 mypy
+          pip install -e ".[dev]" 2>/dev/null || pip install -e . || true
+
+      - name: black (format check)
+        run: black --check src tests
+
+      - name: isort (import order check)
+        run: isort --check-only src tests
+
+      - name: flake8 (style + errors)
+        run: |
+          flake8 src tests \
+            --max-line-length=88 \
+            --extend-ignore=E203,W503,E501 \
+            --exclude=__pycache__,.venv
+
+      - name: mypy (type check)
+        run: |
+          mypy src \
+            --ignore-missing-imports \
+            --no-error-summary \
+            --exclude 'src/(tunnel|monitor)/.*' \
+            2>/dev/null || echo "mypy warnings present (non-blocking)"
+
+  test:
+    name: Tests (pytest + coverage)
+    runs-on: ubuntu-latest
+    env:
+      TELEGRAM_BOT_TOKEN: "1234567890:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      ADMIN_TELEGRAM_ID: "999888777"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -e . pytest pytest-asyncio pytest-cov pytest-mock structlog pydantic-settings aiosqlite
+
+      - name: Run tests with coverage
+        run: |
+          pytest \
+            --cov=src \
+            --cov-report=term-missing \
+            --cov-report=xml \
+            -q
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: coverage.xml
+
+  build:
+    name: Build check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build tools
+        run: pip install build
+
+      - name: Check package imports
+        env:
+          TELEGRAM_BOT_TOKEN: "1234567890:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+          ADMIN_TELEGRAM_ID: "999888777"
+        run: |
+          pip install -e . --quiet
+          python3 -c "
+          from src.config.settings import Settings
+          from src.storage.facade import StorageFacade
+          from src.security.auth import AccessManager
+          from src.claude.facade import ClaudeFacade
+          from src.events.bus import EventBus
+          from src.notifications.service import NotificationService
+          from src.tunnel.manager import TunnelManager
+          from src.monitor.collector import MetricsCollector
+          from src.monitor.alerts import AlertManager
+          print('All imports OK')
+          "
