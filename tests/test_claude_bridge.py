@@ -37,9 +37,9 @@ class TestCredentialSanitizer:
         assert "ABCDEFGHIJKLMN" not in result
 
     def test_masks_telegram_token(self):
-        text = "bot token: 1234567890:AAEd-1Cfk_3Gr43ZVByZYN9ky1N1hbT2zcA"
+        text = "bot token: 1234567890:AAFx-2Xyz_4Mn56PQRsTuVwXyZ0aB1cD2eF3gH"
         result = self.sanitizer.sanitize(text)
-        assert "AAEd-1Cfk_3Gr43ZVB" not in result
+        assert "AAFx-2Xyz_4Mn56PQ" not in result
 
     def test_masks_bearer_token(self):
         text = "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6Ikp"
