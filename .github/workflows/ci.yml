@@ -64,8 +64,8 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install -e ".[dev]" || pip install -e . pytest pytest-asyncio pytest-cov pytest-mock
-          pip install psutil python-telegram-bot structlog pydantic-settings aiosqlite aiohttp
+          pip install -e .
+          pip install pytest pytest-asyncio pytest-cov pytest-mock psutil python-telegram-bot structlog pydantic-settings aiosqlite aiohttp python-dotenv pydantic anthropic
 
       - name: Run tests with coverage
         run: |
