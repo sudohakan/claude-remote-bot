@@ -23,16 +23,15 @@ Admin-only commands:
   /alerts [on|off]— toggle hourly reports
 """
 
+import structlog
 from telegram import Update
 from telegram.ext import ContextTypes
 
-import structlog
-
 from src.bot.utils.constants import (
+    ACCESS_LABELS,
     BOT_VERSION,
     MSG_WELCOME_NEW_USER,
     MSG_WELCOME_UNKNOWN,
-    ACCESS_LABELS,
     ROLE_LABELS,
 )
 from src.bot.utils.formatting import escape_html
@@ -53,6 +52,7 @@ def _settings(ctx: ContextTypes.DEFAULT_TYPE):
 
 
 # ── /start ────────────────────────────────────────────────────────────────────
+
 
 async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     """Register or greet a user."""
@@ -105,6 +105,7 @@ async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
 # ── /help ─────────────────────────────────────────────────────────────────────
 
+
 async def cmd_help(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     """Show commands filtered by the caller's role."""
     user = update.effective_user
@@ -152,6 +153,7 @@ async def cmd_help(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
 # ── /about ────────────────────────────────────────────────────────────────────
 
+
 async def cmd_about(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     settings = _settings(ctx)
     features = []
@@ -182,11 +184,13 @@ async def cmd_about(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
 # ── /ping ─────────────────────────────────────────────────────────────────────
 
+
 async def cmd_ping(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text("pong")
 
 
 # ── /new ─────────────────────────────────────────────────────────────────────
+
 
 async def cmd_new(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     """Reset Claude session for the calling user."""
@@ -216,6 +220,7 @@ async def cmd_new(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
 # ── /status ───────────────────────────────────────────────────────────────────
 
+
 async def cmd_status(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     """Show basic system status."""
     storage = _storage(ctx)
@@ -226,14 +231,20 @@ async def cmd_status(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
     if storage:
         db_ok = await storage.health_check()
-        lines.append(f"{'✅' if db_ok else '❌'} Database: {'OK' if db_ok else 'ERROR'}")
+        lines.append(
+            f"{'✅' if db_ok else '❌'} Database: {'OK' if db_ok else 'ERROR'}"
+        )
 
     if claude and user:
         session = claude.current_session(user.id)
         if session:
-            lines.append(f"📂 Working dir: <code>{escape_html(str(session.working_dir))}</code>")
+            lines.append(
+                f"📂 Working dir: <code>{escape_html(str(session.working_dir))}</code>"
+            )
             lines.append(f"💬 Session turns: {session.total_turns}")
-            lines.append(f"💰 Today cost: ${claude.cost_summary(user.id)['today_cost']:.4f}")
+            lines.append(
+                f"💰 Today cost: ${claude.cost_summary(user.id)['today_cost']:.4f}"
+            )
         else:
             lines.append("No active Claude session — use /new to start one.")
 
@@ -241,6 +252,7 @@ async def cmd_status(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 # ── /ssh ─────────────────────────────────────────────────────────────────────
+
 
 async def cmd_ssh(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     """Show SSH tunnel status and connection info."""
@@ -275,6 +287,7 @@ async def cmd_ssh(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
 # ── /history ──────────────────────────────────────────────────────────────────
 
+
 async def cmd_history(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
     if user is None:
@@ -301,6 +314,7 @@ async def cmd_history(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
 # ── /cwd ──────────────────────────────────────────────────────────────────────
 
+
 async def cmd_cwd(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
     if user is None:
@@ -322,6 +336,7 @@ async def cmd_cwd(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 # ── Admin: /invite ────────────────────────────────────────────────────────────
+
 
 async def cmd_invite(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
@@ -347,9 +362,7 @@ async def cmd_invite(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     if limiter:
         allowed, wait = await limiter.check("invites", user.id)
         if not allowed:
-            await update.message.reply_text(
-                f"Invite rate limit — wait {wait:.0f}s."
-            )
+            await update.message.reply_text(f"Invite rate limit — wait {wait:.0f}s.")
             return
 
     invite = await access.create_invite(created_by=user.id, ttl_hours=24)
@@ -362,6 +375,7 @@ async def cmd_invite(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 # ── Admin: /users ─────────────────────────────────────────────────────────────
+
 
 async def cmd_users(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
@@ -400,6 +414,7 @@ async def cmd_users(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
 # ── Admin: /promote ──────────────────────────────────────────────────────────
 
+
 async def cmd_promote(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
     if user is None:
@@ -432,6 +447,7 @@ async def cmd_promote(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 # ── Admin: /demote ───────────────────────────────────────────────────────────
+
 
 async def cmd_demote(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
@@ -471,6 +487,7 @@ async def cmd_demote(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
 # ── Admin: /revoke ───────────────────────────────────────────────────────────
 
+
 async def cmd_revoke(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
     if user is None:
@@ -497,6 +514,7 @@ async def cmd_revoke(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 # ── Admin: /stats ─────────────────────────────────────────────────────────────
+
 
 async def cmd_stats(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
@@ -536,6 +554,7 @@ async def cmd_stats(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
 # ── Admin: /sessions ──────────────────────────────────────────────────────────
 
+
 async def cmd_sessions(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
     if user is None:
@@ -563,6 +582,7 @@ async def cmd_sessions(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 # ── Admin: /alerts ────────────────────────────────────────────────────────────
+
 
 async def cmd_alerts(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user

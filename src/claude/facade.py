@@ -52,6 +52,7 @@ class ClaudeFacade:
         today_spend = self._costs.today_cost(user_id)
         if today_spend >= self._max_cost:
             from .exceptions import ClaudeAuthError
+
             raise ClaudeAuthError(
                 f"Daily cost limit reached (${today_spend:.2f}/${self._max_cost:.2f})"
             )
@@ -73,6 +74,7 @@ class ClaudeFacade:
             raise
         except Exception as exc:
             from .exceptions import ClaudeProcessError
+
             raise ClaudeProcessError(f"Unexpected error: {exc}") from exc
 
         # Update session stats
@@ -89,7 +91,10 @@ class ClaudeFacade:
         return response
 
     def new_session(
-        self, user_id: int, access_level: str = "sandbox", username: Optional[str] = None
+        self,
+        user_id: int,
+        access_level: str = "sandbox",
+        username: Optional[str] = None,
     ) -> UserSession:
         """Force a new session without running a prompt."""
         return self._sessions.reset(user_id, access_level, username)

@@ -78,9 +78,7 @@ class AccessManager:
         """Generate an 8-character hex invite token."""
         return secrets.token_hex(_TOKEN_BYTES)
 
-    async def create_invite(
-        self, created_by: int, ttl_hours: int = 24
-    ) -> InviteModel:
+    async def create_invite(self, created_by: int, ttl_hours: int = 24) -> InviteModel:
         """Create and persist a new invite token."""
         token = self.generate_token()
         invite = InviteModel(

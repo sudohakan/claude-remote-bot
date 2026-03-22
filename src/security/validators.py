@@ -16,30 +16,73 @@ MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 
 # Extensions that are safe to accept
 ALLOWED_EXTENSIONS: Set[str] = {
-    ".py", ".js", ".ts", ".jsx", ".tsx",
-    ".java", ".cpp", ".c", ".h", ".hpp", ".cs",
-    ".go", ".rs", ".rb", ".php", ".swift", ".kt",
-    ".md", ".txt", ".json", ".yml", ".yaml", ".toml",
-    ".xml", ".html", ".css", ".scss", ".sql",
-    ".sh", ".bash", ".zsh", ".ps1",
-    ".r", ".scala", ".clj", ".hs", ".elm",
-    ".vue", ".svelte", ".lock", ".env.example",
+    ".py",
+    ".js",
+    ".ts",
+    ".jsx",
+    ".tsx",
+    ".java",
+    ".cpp",
+    ".c",
+    ".h",
+    ".hpp",
+    ".cs",
+    ".go",
+    ".rs",
+    ".rb",
+    ".php",
+    ".swift",
+    ".kt",
+    ".md",
+    ".txt",
+    ".json",
+    ".yml",
+    ".yaml",
+    ".toml",
+    ".xml",
+    ".html",
+    ".css",
+    ".scss",
+    ".sql",
+    ".sh",
+    ".bash",
+    ".zsh",
+    ".ps1",
+    ".r",
+    ".scala",
+    ".clj",
+    ".hs",
+    ".elm",
+    ".vue",
+    ".svelte",
+    ".lock",
+    ".env.example",
 }
 
 # Filenames that should never be uploaded
 BLOCKED_FILENAMES: Set[str] = {
-    ".env", ".env.local", ".env.production", ".env.development",
-    "id_rsa", "id_dsa", "id_ecdsa", "id_ed25519",
-    "shadow", "passwd", "sudoers", "hosts",
-    ".bash_history", ".zsh_history",
+    ".env",
+    ".env.local",
+    ".env.production",
+    ".env.development",
+    "id_rsa",
+    "id_dsa",
+    "id_ecdsa",
+    "id_ed25519",
+    "shadow",
+    "passwd",
+    "sudoers",
+    "hosts",
+    ".bash_history",
+    ".zsh_history",
 }
 
 # Regex patterns for dangerous content in paths/filenames
 _DANGER_PATTERNS = [
-    re.compile(r"\.\."),        # parent directory traversal
-    re.compile(r"\x00"),        # null byte injection
-    re.compile(r"\$\{"),        # variable expansion ${...}
-    re.compile(r"`"),           # backtick command substitution
+    re.compile(r"\.\."),  # parent directory traversal
+    re.compile(r"\x00"),  # null byte injection
+    re.compile(r"\$\{"),  # variable expansion ${...}
+    re.compile(r"`"),  # backtick command substitution
 ]
 
 

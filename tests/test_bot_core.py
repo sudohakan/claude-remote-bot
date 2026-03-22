@@ -9,20 +9,20 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from src.bot.utils.formatting import (
-    escape_html,
-    split_message,
-    format_code_block,
-)
 from src.bot.utils.constants import (
     BOT_VERSION,
+    MESSAGE_CHUNK_SIZE,
     MSG_AUTH_REQUIRED,
     MSG_RATE_LIMITED,
-    MESSAGE_CHUNK_SIZE,
+)
+from src.bot.utils.formatting import (
+    escape_html,
+    format_code_block,
+    split_message,
 )
 
-
 # ── Formatting utilities ──────────────────────────────────────────────────────
+
 
 class TestFormatting:
     def test_escape_html_lt_gt(self):
@@ -83,12 +83,16 @@ class TestFormatting:
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 
+
 class TestConstants:
     def test_bot_version_not_empty(self):
         assert BOT_VERSION
 
     def test_auth_required_message(self):
-        assert "invite" in MSG_AUTH_REQUIRED.lower() or "token" in MSG_AUTH_REQUIRED.lower()
+        assert (
+            "invite" in MSG_AUTH_REQUIRED.lower()
+            or "token" in MSG_AUTH_REQUIRED.lower()
+        )
 
     def test_rate_limited_template(self):
         msg = MSG_RATE_LIMITED.format(wait=30)
@@ -99,6 +103,7 @@ class TestConstants:
 
 
 # ── Middleware (unit tests with mocks) ────────────────────────────────────────
+
 
 class TestAuthMiddleware:
     async def test_authorised_user_passes(self):

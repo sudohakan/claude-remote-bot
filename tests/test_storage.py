@@ -34,6 +34,7 @@ async def storage(tmp_path):
 
 # ── DatabaseManager ──────────────────────────────────────────────────────────
 
+
 class TestDatabaseManager:
     async def test_health_check(self, db):
         assert await db.health_check() is True
@@ -54,6 +55,7 @@ class TestDatabaseManager:
 
 
 # ── UserRepository ────────────────────────────────────────────────────────────
+
 
 class TestUserRepository:
     async def test_create_and_get(self, storage):
@@ -113,6 +115,7 @@ class TestUserRepository:
 
 
 # ── InviteRepository ──────────────────────────────────────────────────────────
+
 
 class TestInviteRepository:
     def _make_invite(self, created_by: int = 1, hours: int = 24) -> InviteModel:
@@ -188,6 +191,7 @@ class TestInviteRepository:
 
 # ── SessionRepository ─────────────────────────────────────────────────────────
 
+
 class TestSessionRepository:
     async def _ensure_user(self, storage, user_id: int) -> None:
         await storage.users.create(UserModel(user_id=user_id))
@@ -254,6 +258,7 @@ class TestSessionRepository:
 
 
 # ── CommandLogRepository ──────────────────────────────────────────────────────
+
 
 class TestCommandLogRepository:
     async def _ensure_user(self, storage, user_id: int) -> None:

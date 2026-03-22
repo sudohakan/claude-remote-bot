@@ -110,10 +110,13 @@ class MetricsCollector:
         if not self._history:
             return None
         try:
-            return Metrics(**{
-                k: v for k, v in self._history[-1].items()
-                if k in Metrics.__dataclass_fields__
-            })
+            return Metrics(
+                **{
+                    k: v
+                    for k, v in self._history[-1].items()
+                    if k in Metrics.__dataclass_fields__
+                }
+            )
         except (TypeError, KeyError):
             return None
 
@@ -228,8 +231,13 @@ class MetricsCollector:
         """Count SSH auth failures in the last minute via journalctl."""
         try:
             proc = await asyncio.create_subprocess_exec(
-                "journalctl", "-u", "ssh", "--since", "1 minute ago",
-                "--no-pager", "-q",
+                "journalctl",
+                "-u",
+                "ssh",
+                "--since",
+                "1 minute ago",
+                "--no-pager",
+                "-q",
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.DEVNULL,
             )

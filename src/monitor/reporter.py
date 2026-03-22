@@ -9,7 +9,7 @@ Formats metrics into human-readable Telegram messages:
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from .collector import MetricsCollector, Metrics
+from .collector import Metrics, MetricsCollector
 
 
 class StatusReporter:

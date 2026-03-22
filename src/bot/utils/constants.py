@@ -31,14 +31,12 @@ MSG_WELCOME_UNKNOWN = (
 
 # Welcome message shown after successful invite redemption
 MSG_WELCOME_NEW_USER = (
-    "Welcome! Your account has been created.\n\n"
-    "Use /help to see available commands."
+    "Welcome! Your account has been created.\n\n" "Use /help to see available commands."
 )
 
 # Auth rejection message
 MSG_AUTH_REQUIRED = (
-    "Access denied. You need an invite token.\n"
-    "Contact the admin for an invite."
+    "Access denied. You need an invite token.\n" "Contact the admin for an invite."
 )
 
 # Rate limit message template

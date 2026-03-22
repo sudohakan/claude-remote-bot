@@ -5,10 +5,10 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from src.storage.facade import StorageFacade
-from src.storage.models import UserModel
 from src.security.auth import AccessManager
 from src.security.rate_limiter import RateLimiter
+from src.storage.facade import StorageFacade
+from src.storage.models import UserModel
 
 
 @pytest.fixture
@@ -27,6 +27,7 @@ async def mgr(storage):
 
 
 # ── AccessManager ─────────────────────────────────────────────────────────────
+
 
 class TestAccessManager:
     async def test_ensure_admin_creates_user(self, storage):
@@ -131,6 +132,7 @@ class TestAccessManager:
 
 # ── RateLimiter ───────────────────────────────────────────────────────────────
 
+
 class TestRateLimiter:
     async def test_allow_within_limit(self):
         limiter = RateLimiter(claude_per_min=20)
@@ -180,7 +182,7 @@ class TestRateLimiter:
         ok_cmds, _ = await limiter.check("commands", user_id=1)
 
         assert ok_claude is False  # claude bucket empty
-        assert ok_cmds is True   # commands bucket still full
+        assert ok_cmds is True  # commands bucket still full
 
     async def test_unknown_category_uses_commands_config(self):
         limiter = RateLimiter()

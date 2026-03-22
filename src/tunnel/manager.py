@@ -108,7 +108,13 @@ class TunnelManager:
 
     async def _spawn_ngrok(self) -> None:
         try:
-            cmd = ["ngrok", "tcp", str(self._ssh_port), "--log=stdout", "--log-level=warn"]
+            cmd = [
+                "ngrok",
+                "tcp",
+                str(self._ssh_port),
+                "--log=stdout",
+                "--log-level=warn",
+            ]
             if self._authtoken:
                 cmd += [f"--authtoken={self._authtoken}"]
             self._process = subprocess.Popen(
@@ -147,7 +153,9 @@ class TunnelManager:
             import aiohttp  # optional dep — tunnel feature requires it
 
             async with aiohttp.ClientSession() as session:
-                async with session.get(_NGROK_API, timeout=aiohttp.ClientTimeout(total=5)) as resp:
+                async with session.get(
+                    _NGROK_API, timeout=aiohttp.ClientTimeout(total=5)
+                ) as resp:
                     if resp.status == 200:
                         data = await resp.json()
                         await self._handle_api_response(data)

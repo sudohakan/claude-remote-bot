@@ -30,44 +30,84 @@ class QuickAction:
 # Default action registry
 _DEFAULT_ACTIONS: Dict[str, QuickAction] = {
     "test": QuickAction(
-        id="test", name="Run Tests", description="Run project tests",
-        command="test", icon="T", category="testing",
-        context_required=["has_tests"], priority=10,
+        id="test",
+        name="Run Tests",
+        description="Run project tests",
+        command="test",
+        icon="T",
+        category="testing",
+        context_required=["has_tests"],
+        priority=10,
     ),
     "install": QuickAction(
-        id="install", name="Install Deps", description="Install dependencies",
-        command="install", icon="P", category="setup",
-        context_required=["has_package_manager"], priority=9,
+        id="install",
+        name="Install Deps",
+        description="Install dependencies",
+        command="install",
+        icon="P",
+        category="setup",
+        context_required=["has_package_manager"],
+        priority=9,
     ),
     "format": QuickAction(
-        id="format", name="Format Code", description="Format with project formatter",
-        command="format", icon="F", category="quality",
-        context_required=["has_formatter"], priority=7,
+        id="format",
+        name="Format Code",
+        description="Format with project formatter",
+        command="format",
+        icon="F",
+        category="quality",
+        context_required=["has_formatter"],
+        priority=7,
     ),
     "lint": QuickAction(
-        id="lint", name="Lint Code", description="Check code quality",
-        command="lint", icon="L", category="quality",
-        context_required=["has_linter"], priority=8,
+        id="lint",
+        name="Lint Code",
+        description="Check code quality",
+        command="lint",
+        icon="L",
+        category="quality",
+        context_required=["has_linter"],
+        priority=8,
     ),
     "security": QuickAction(
-        id="security", name="Security Scan", description="Vulnerability scan",
-        command="security", icon="S", category="security",
-        context_required=["has_dependencies"], priority=6,
+        id="security",
+        name="Security Scan",
+        description="Vulnerability scan",
+        command="security",
+        icon="S",
+        category="security",
+        context_required=["has_dependencies"],
+        priority=6,
     ),
     "optimize": QuickAction(
-        id="optimize", name="Optimize", description="Optimize code performance",
-        command="optimize", icon="O", category="performance",
-        context_required=["has_code"], priority=5,
+        id="optimize",
+        name="Optimize",
+        description="Optimize code performance",
+        command="optimize",
+        icon="O",
+        category="performance",
+        context_required=["has_code"],
+        priority=5,
     ),
     "document": QuickAction(
-        id="document", name="Generate Docs", description="Generate documentation",
-        command="document", icon="D", category="docs",
-        context_required=["has_code"], priority=4,
+        id="document",
+        name="Generate Docs",
+        description="Generate documentation",
+        command="document",
+        icon="D",
+        category="docs",
+        context_required=["has_code"],
+        priority=4,
     ),
     "refactor": QuickAction(
-        id="refactor", name="Refactor", description="Suggest code improvements",
-        command="refactor", icon="R", category="quality",
-        context_required=["has_code"], priority=3,
+        id="refactor",
+        name="Refactor",
+        description="Suggest code improvements",
+        command="refactor",
+        icon="R",
+        category="quality",
+        context_required=["has_code"],
+        priority=3,
     ),
 }
 
@@ -78,15 +118,12 @@ class QuickActionManager:
     def __init__(self) -> None:
         self.actions: Dict[str, QuickAction] = dict(_DEFAULT_ACTIONS)
 
-    async def get_suggestions(
-        self, session: Any, limit: int = 6
-    ) -> List[QuickAction]:
+    async def get_suggestions(self, session: Any, limit: int = 6) -> List[QuickAction]:
         """Return up to *limit* suggested actions based on session context."""
         try:
             context = await self._analyze_context(session)
             available = [
-                a for a in self.actions.values()
-                if self._is_available(a, context)
+                a for a in self.actions.values() if self._is_available(a, context)
             ]
             available.sort(key=lambda x: x.priority, reverse=True)
             return available[:limit]
@@ -150,5 +187,9 @@ class QuickActionManager:
         action = self.actions.get(action_id)
         if not action:
             raise ValueError(f"Unknown quick action: {action_id}")
-        logger.info("Quick action requested: %s (session=%s)", action.name, getattr(session, "id", "?"))
+        logger.info(
+            "Quick action requested: %s (session=%s)",
+            action.name,
+            getattr(session, "id", "?"),
+        )
         return action.command

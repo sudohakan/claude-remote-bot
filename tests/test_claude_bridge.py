@@ -6,15 +6,15 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from src.claude.exceptions import ClaudeTimeoutError, ClaudeAuthError
-from src.claude.sanitizer import CredentialSanitizer
-from src.claude.session import SessionManager
-from src.claude.monitor import CostTracker
-from src.claude.sdk_integration import ClaudeResponse, ClaudeSDKRunner
+from src.claude.exceptions import ClaudeAuthError, ClaudeTimeoutError
 from src.claude.facade import ClaudeFacade
-
+from src.claude.monitor import CostTracker
+from src.claude.sanitizer import CredentialSanitizer
+from src.claude.sdk_integration import ClaudeResponse, ClaudeSDKRunner
+from src.claude.session import SessionManager
 
 # ── CredentialSanitizer ───────────────────────────────────────────────────────
+
 
 class TestCredentialSanitizer:
     def setup_method(self):
@@ -67,6 +67,7 @@ class TestCredentialSanitizer:
 
 # ── SessionManager ────────────────────────────────────────────────────────────
 
+
 class TestSessionManager:
     def test_get_or_create_sandbox(self, tmp_path):
         mgr = SessionManager()
@@ -74,7 +75,9 @@ class TestSessionManager:
         with patch("src.claude.session._SANDBOX_BASE", tmp_path / "sandbox"):
             session = mgr.get_or_create(user_id=1, access_level="sandbox")
         assert session.user_id == 1
-        assert "sandbox" in str(session.working_dir) or str(1) in str(session.working_dir)
+        assert "sandbox" in str(session.working_dir) or str(1) in str(
+            session.working_dir
+        )
 
     def test_same_user_returns_same_session(self, tmp_path):
         mgr = SessionManager()
@@ -111,6 +114,7 @@ class TestSessionManager:
             mgr.get_or_create(user_id=1)
 
         import time
+
         time.sleep(0.1)  # let time pass
 
         result = mgr.get(user_id=1)
@@ -136,6 +140,7 @@ class TestSessionManager:
 
 # ── CostTracker ───────────────────────────────────────────────────────────────
 
+
 class TestCostTracker:
     def test_record_and_summary(self):
         tracker = CostTracker()
@@ -157,6 +162,7 @@ class TestCostTracker:
 
 
 # ── ClaudeFacade ──────────────────────────────────────────────────────────────
+
 
 class TestClaudeFacade:
     def _make_facade(self, tmp_path, max_cost=5.0):

@@ -82,7 +82,12 @@ class SessionManager:
         )
         return session
 
-    def reset(self, user_id: int, access_level: str = "sandbox", username: Optional[str] = None) -> UserSession:
+    def reset(
+        self,
+        user_id: int,
+        access_level: str = "sandbox",
+        username: Optional[str] = None,
+    ) -> UserSession:
         """Force-create a fresh session, discarding any existing one."""
         session = self._new_session(user_id, access_level, username)
         self._sessions[user_id] = session

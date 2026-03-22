@@ -80,7 +80,9 @@ class AgentHandler:
         )
         prompt = event.prompt
         if event.skill_name:
-            prompt = f"/{event.skill_name}\n\n{prompt}" if prompt else f"/{event.skill_name}"
+            prompt = (
+                f"/{event.skill_name}\n\n{prompt}" if prompt else f"/{event.skill_name}"
+            )
         cwd = event.working_directory or self.default_dir
         try:
             response = await self.claude.run_command(
@@ -116,7 +118,9 @@ class AgentHandler:
             "Provide a concise analysis and highlight anything that needs attention."
         )
 
-    def _summarize(self, data: Any, prefix: str = "", depth: int = 0, max_depth: int = 2) -> str:
+    def _summarize(
+        self, data: Any, prefix: str = "", depth: int = 0, max_depth: int = 2
+    ) -> str:
         lines: List[str] = []
         self._flatten(data, lines, prefix, depth, max_depth)
         summary = "\n".join(lines)

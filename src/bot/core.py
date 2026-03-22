@@ -22,6 +22,7 @@ from telegram.ext import (
 )
 
 from src.config.settings import Settings
+
 from .orchestrator import BotOrchestrator
 
 logger = structlog.get_logger(__name__)
@@ -67,9 +68,7 @@ class RemoteBot:
             (-2, self._wrap_middleware("auth")),
             (-1, self._wrap_middleware("rate_limit")),
         ]:
-            self._app.add_handler(
-                MessageHandler(filters.ALL, mw_fn), group=group
-            )
+            self._app.add_handler(MessageHandler(filters.ALL, mw_fn), group=group)
 
         # Handlers
         orchestrator = BotOrchestrator(self._deps)
@@ -126,9 +125,7 @@ class RemoteBot:
     def _wrap_middleware(self, name: str) -> Callable:
         """Create a MessageHandler-compatible wrapper for a middleware function."""
 
-        async def _handler(
-            update: Update, context: ContextTypes.DEFAULT_TYPE
-        ) -> None:
+        async def _handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             # Skip bot-generated updates
             if update.effective_user and getattr(
                 update.effective_user, "is_bot", False
@@ -157,12 +154,15 @@ class RemoteBot:
     def _get_middleware(name: str) -> Callable:
         if name == "security":
             from .middleware.security import security_middleware
+
             return security_middleware
         if name == "auth":
             from .middleware.auth import auth_middleware
+
             return auth_middleware
         if name == "rate_limit":
             from .middleware.rate_limit import rate_limit_middleware
+
             return rate_limit_middleware
         raise ValueError(f"Unknown middleware: {name}")
 

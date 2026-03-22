@@ -5,11 +5,11 @@ from pathlib import Path
 import pytest
 
 from src.security.validators import (
+    MAX_UPLOAD_BYTES,
     PathValidator,
     sanitize_text,
     validate_filename,
     validate_upload_size,
-    MAX_UPLOAD_BYTES,
 )
 
 
@@ -19,6 +19,7 @@ def sandbox(tmp_path):
 
 
 # ── PathValidator ─────────────────────────────────────────────────────────────
+
 
 class TestPathValidator:
     def test_valid_path_within_root(self, sandbox, tmp_path):
@@ -76,6 +77,7 @@ class TestPathValidator:
 
 # ── validate_filename ─────────────────────────────────────────────────────────
 
+
 class TestValidateFilename:
     def test_valid_python_file(self):
         ok, err = validate_filename("main.py")
@@ -126,6 +128,7 @@ class TestValidateFilename:
 
 # ── validate_upload_size ─────────────────────────────────────────────────────
 
+
 class TestUploadSize:
     def test_small_file_ok(self):
         ok, err = validate_upload_size(1024)
@@ -143,6 +146,7 @@ class TestUploadSize:
 
 
 # ── sanitize_text ─────────────────────────────────────────────────────────────
+
 
 class TestSanitizeText:
     def test_strips_null_bytes(self):

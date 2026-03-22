@@ -4,12 +4,11 @@ In agentic mode every non-command text message becomes a Claude prompt.
 Rate-limits Claude requests separately from general commands.
 """
 
+import structlog
 from telegram import Update
 from telegram.ext import ContextTypes
 
-import structlog
-
-from src.bot.utils.formatting import split_message, escape_html
+from src.bot.utils.formatting import escape_html, split_message
 from src.claude.exceptions import ClaudeError, ClaudeTimeoutError
 
 logger = structlog.get_logger(__name__)
@@ -48,9 +47,7 @@ async def handle_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None
             access_level = level
 
     # Show "typing…" indicator
-    await ctx.bot.send_chat_action(
-        chat_id=update.effective_chat.id, action="typing"
-    )
+    await ctx.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
 
     try:
         response = await claude.execute(
@@ -65,7 +62,9 @@ async def handle_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None
         )
         return
     except ClaudeError as exc:
-        await message.reply_text(f"Claude error: {escape_html(str(exc))}", parse_mode="HTML")
+        await message.reply_text(
+            f"Claude error: {escape_html(str(exc))}", parse_mode="HTML"
+        )
         logger.error("Claude error", user_id=user.id, error=str(exc))
         return
 
@@ -73,6 +72,7 @@ async def handle_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None
     storage = ctx.bot_data.get("storage")
     if storage:
         from src.storage.models import CommandLogModel
+
         await storage.commands.log(
             CommandLogModel(user_id=user.id, command="<message>", result="ok")
         )

@@ -10,8 +10,8 @@ from typing import Any, Dict, List, Optional
 
 from .bus import Event
 
-
 # ── Bot / User events ─────────────────────────────────────────────────────────
+
 
 @dataclass
 class UserMessageEvent(Event):
@@ -38,6 +38,7 @@ class AgentResponseEvent(Event):
 
 # ── Tunnel events ─────────────────────────────────────────────────────────────
 
+
 @dataclass
 class TunnelStateChangeEvent(Event):
     """ngrok tunnel changed state."""
@@ -60,11 +61,12 @@ class TunnelRetryExhaustedEvent(Event):
 
 # ── Monitor / alert events ────────────────────────────────────────────────────
 
+
 @dataclass
 class AlertEvent(Event):
     """A monitored metric crossed a threshold for the first time."""
 
-    alert_type: str = ""       # e.g. "cpu_high", "ram_high", "disk_high", "ssh_brute_force"
+    alert_type: str = ""  # e.g. "cpu_high", "ram_high", "disk_high", "ssh_brute_force"
     value: float = 0.0
     threshold: float = 0.0
     message: str = ""
@@ -80,6 +82,7 @@ class AlertClearedEvent(Event):
 
 
 # ── Scheduled / webhook events ────────────────────────────────────────────────
+
 
 @dataclass
 class ScheduledEvent(Event):

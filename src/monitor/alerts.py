@@ -20,6 +20,7 @@ import structlog
 
 from src.events.bus import EventBus
 from src.events.types import AlertClearedEvent, AlertEvent
+
 from .collector import Metrics
 
 logger = structlog.get_logger(__name__)

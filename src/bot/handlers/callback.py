@@ -8,10 +8,9 @@ Supported actions:
   show_help    — same as /help
 """
 
+import structlog
 from telegram import Update
 from telegram.ext import ContextTypes
-
-import structlog
 
 logger = structlog.get_logger(__name__)
 
@@ -31,14 +30,17 @@ async def handle_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> Non
 
     if action == "new_session":
         from src.bot.handlers.command import cmd_new
+
         await cmd_new(update, ctx)
 
     elif action == "show_status":
         from src.bot.handlers.command import cmd_status
+
         await cmd_status(update, ctx)
 
     elif action == "show_help":
         from src.bot.handlers.command import cmd_help
+
         await cmd_help(update, ctx)
 
     else:

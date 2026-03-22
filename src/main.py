@@ -13,17 +13,17 @@ from typing import Optional
 
 import structlog
 
-from src.config.settings import Settings
-from src.storage.facade import StorageFacade
-from src.security.auth import AccessManager
-from src.security.rate_limiter import RateLimiter
+from src.bot.core import RemoteBot
 from src.claude.facade import ClaudeFacade
 from src.claude.monitor import CostTracker
 from src.claude.sanitizer import CredentialSanitizer
 from src.claude.sdk_integration import ClaudeSDKRunner
 from src.claude.session import SessionManager
-from src.bot.core import RemoteBot
+from src.config.settings import Settings
 from src.events.bus import EventBus
+from src.security.auth import AccessManager
+from src.security.rate_limiter import RateLimiter
+from src.storage.facade import StorageFacade
 
 logger = structlog.get_logger(__name__)
 
@@ -88,11 +88,11 @@ async def _main() -> None:
     # ── Tunnel manager (optional) ─────────────────────────────────────────────
     tunnel_manager = None
     if settings.enable_tunnel:
-        from src.tunnel.manager import TunnelManager
-        from src.tunnel.notifier import TunnelNotifier
-
         # Lazy-import telegram Bot for notifier
         from telegram import Bot as TelegramBot
+
+        from src.tunnel.manager import TunnelManager
+        from src.tunnel.notifier import TunnelNotifier
 
         tg_bot_for_notifier = TelegramBot(token=settings.telegram_token_str)
 
@@ -117,8 +117,8 @@ async def _main() -> None:
     monitor_collector = None
     alert_manager = None
     if settings.enable_monitor:
-        from src.monitor.collector import MetricsCollector
         from src.monitor.alerts import AlertManager
+        from src.monitor.collector import MetricsCollector
 
         monitor_collector = MetricsCollector(
             history_file=Path("data/metrics.json"),

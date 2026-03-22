@@ -15,7 +15,9 @@ from src.config.settings import Settings
 # 10 MB upload limit
 _MAX_IMAGE_BYTES = 10 * 1024 * 1024
 
-_SUPPORTED_FORMATS: frozenset[str] = frozenset({".png", ".jpg", ".jpeg", ".gif", ".webp"})
+_SUPPORTED_FORMATS: frozenset[str] = frozenset(
+    {".png", ".jpg", ".jpeg", ".gif", ".webp"}
+)
 
 
 @dataclass
@@ -138,5 +140,7 @@ class ImageHandler:
         return base + (f"Specific request: {caption}" if caption else "")
 
     def _generic_prompt(self, caption: Optional[str]) -> str:
-        base = "I'm sharing an image. Please analyze it and provide relevant insights.\n\n"
+        base = (
+            "I'm sharing an image. Please analyze it and provide relevant insights.\n\n"
+        )
         return base + (f"Context: {caption}" if caption else "")

@@ -152,9 +152,7 @@ class Settings(BaseSettings):
     @property
     def ngrok_authtoken_str(self) -> Optional[str]:
         """ngrok auth token as plain string, or None."""
-        return (
-            self.ngrok_authtoken.get_secret_value() if self.ngrok_authtoken else None
-        )
+        return self.ngrok_authtoken.get_secret_value() if self.ngrok_authtoken else None
 
     @property
     def database_path(self) -> Path:

@@ -17,6 +17,7 @@ logger = structlog.get_logger(__name__)
 
 # ── UserRepository ────────────────────────────────────────────────────────────
 
+
 class UserRepository:
     """CRUD for the users table."""
 
@@ -137,6 +138,7 @@ class UserRepository:
 
 # ── InviteRepository ──────────────────────────────────────────────────────────
 
+
 class InviteRepository:
     """CRUD for the invites table."""
 
@@ -166,9 +168,7 @@ class InviteRepository:
 
     async def get(self, token: str) -> Optional[InviteModel]:
         async with self._db.get_connection() as conn:
-            cur = await conn.execute(
-                "SELECT * FROM invites WHERE token = ?", (token,)
-            )
+            cur = await conn.execute("SELECT * FROM invites WHERE token = ?", (token,))
             row = await cur.fetchone()
         return InviteModel.from_row(row) if row else None
 
@@ -225,6 +225,7 @@ class InviteRepository:
 
 
 # ── SessionRepository ─────────────────────────────────────────────────────────
+
 
 class SessionRepository:
     """CRUD for the claude_sessions table."""
@@ -327,6 +328,7 @@ class SessionRepository:
 
 
 # ── CommandLogRepository ──────────────────────────────────────────────────────
+
 
 class CommandLogRepository:
     """CRUD for the command_log table with 30-day retention."""

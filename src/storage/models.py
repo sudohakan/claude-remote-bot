@@ -25,6 +25,7 @@ def _parse_dt(value: Any) -> Optional[datetime]:
 
 # ── User ─────────────────────────────────────────────────────────────────────
 
+
 @dataclass
 class UserModel:
     """Represents a row in the users table."""
@@ -56,6 +57,7 @@ class UserModel:
 
 
 # ── Invite token ─────────────────────────────────────────────────────────────
+
 
 @dataclass
 class InviteModel:
@@ -96,6 +98,7 @@ class InviteModel:
 
 # ── Claude session ────────────────────────────────────────────────────────────
 
+
 @dataclass
 class SessionModel:
     """Represents a row in the claude_sessions table."""
@@ -133,6 +136,7 @@ class SessionModel:
 
 
 # ── Command log ───────────────────────────────────────────────────────────────
+
 
 @dataclass
 class CommandLogModel:

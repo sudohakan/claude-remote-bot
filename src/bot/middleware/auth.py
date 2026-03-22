@@ -12,9 +12,7 @@ import structlog
 logger = structlog.get_logger(__name__)
 
 
-async def auth_middleware(
-    handler: Callable, update: Any, data: Dict[str, Any]
-) -> Any:
+async def auth_middleware(handler: Callable, update: Any, data: Dict[str, Any]) -> Any:
     """Reject updates from users not in the bot's user table."""
     user = getattr(update, "effective_user", None)
     if user is None:
@@ -32,6 +30,7 @@ async def auth_middleware(
         message = getattr(update, "effective_message", None)
         if message:
             from src.bot.utils.constants import MSG_AUTH_REQUIRED
+
             await message.reply_text(MSG_AUTH_REQUIRED)
         return  # do NOT call handler
 

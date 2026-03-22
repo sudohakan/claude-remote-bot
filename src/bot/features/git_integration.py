@@ -61,8 +61,17 @@ class GitIntegration:
     """Execute safe, read-only git commands within an approved directory."""
 
     SAFE_COMMANDS: Set[str] = {
-        "status", "log", "diff", "branch", "remote",
-        "show", "ls-files", "ls-tree", "rev-parse", "rev-list", "describe",
+        "status",
+        "log",
+        "diff",
+        "branch",
+        "remote",
+        "show",
+        "ls-files",
+        "ls-tree",
+        "rev-parse",
+        "rev-list",
+        "describe",
     }
 
     DANGEROUS_PATTERNS: List[str] = [
@@ -159,9 +168,13 @@ class GitIntegration:
             raise SecurityError("File path outside repository")
         log_out, _ = await self._run(
             [
-                "git", "log", f"--max-count={limit}",
+                "git",
+                "log",
+                f"--max-count={limit}",
                 "--pretty=format:%H|%an|%aI|%s",
-                "--numstat", "--", file_path,
+                "--numstat",
+                "--",
+                file_path,
             ],
             repo_path,
         )
@@ -254,7 +267,9 @@ class GitIntegration:
         if not command or command[0] != "git":
             raise SecurityError("Only git commands allowed")
         if len(command) < 2 or command[1] not in self.SAFE_COMMANDS:
-            raise SecurityError(f"Unsafe git subcommand: {command[1] if len(command) > 1 else '(none)'}")
+            raise SecurityError(
+                f"Unsafe git subcommand: {command[1] if len(command) > 1 else '(none)'}"
+            )
         cmd_str = " ".join(command)
         for pattern in self.DANGEROUS_PATTERNS:
             if re.search(pattern, cmd_str, re.IGNORECASE):

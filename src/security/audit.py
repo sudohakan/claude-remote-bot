@@ -76,9 +76,7 @@ class AuditLogger:
             )
         )
 
-    async def log_path_traversal(
-        self, user_id: int, attempted_path: str
-    ) -> None:
+    async def log_path_traversal(self, user_id: int, attempted_path: str) -> None:
         await self._store(
             AuditEvent(
                 user_id=user_id,
@@ -153,7 +151,7 @@ class AuditLogger:
     async def _store(self, event: AuditEvent) -> None:
         self._events.append(event)
         if len(self._events) > self._max:
-            self._events = self._events[-self._max:]
+            self._events = self._events[-self._max :]
 
         if event.risk_level in ("high", "critical"):
             logger.warning(

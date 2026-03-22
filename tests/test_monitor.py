@@ -14,8 +14,8 @@ from src.monitor.alerts import AlertManager
 from src.monitor.collector import Metrics, MetricsCollector
 from src.monitor.reporter import StatusReporter
 
-
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def make_metrics(**kwargs) -> Metrics:
     defaults = dict(
@@ -66,6 +66,7 @@ def alert_manager(event_bus):
 
 # ── MetricsCollector ──────────────────────────────────────────────────────────
 
+
 class TestMetricsCollector:
     def test_empty_history(self, collector):
         assert collector.get_latest() is None
@@ -74,6 +75,7 @@ class TestMetricsCollector:
     def test_history_persistence(self, collector, tmp_path):
         sample = make_metrics()
         import dataclasses
+
         collector._history.append(dataclasses.asdict(sample))
         collector._save_history()
 
@@ -82,8 +84,9 @@ class TestMetricsCollector:
         assert len(c2._history) == 1
 
     def test_history_max_size(self, collector):
-        from src.monitor.collector import _MAX_HISTORY
         import dataclasses
+
+        from src.monitor.collector import _MAX_HISTORY
 
         for _ in range(_MAX_HISTORY + 100):
             collector._history.append(dataclasses.asdict(make_metrics()))
@@ -94,6 +97,7 @@ class TestMetricsCollector:
 
     def test_get_history_hours_limit(self, collector):
         import dataclasses
+
         # Add 120 samples (2 hours at 1/min)
         for _ in range(120):
             collector._history.append(dataclasses.asdict(make_metrics()))
@@ -104,12 +108,12 @@ class TestMetricsCollector:
     async def test_collect_once_uses_psutil(self, collector):
         mock_ram = MagicMock()
         mock_ram.percent = 70.0
-        mock_ram.used = 7 * 1024 ** 3
-        mock_ram.total = 16 * 1024 ** 3
+        mock_ram.used = 7 * 1024**3
+        mock_ram.total = 16 * 1024**3
         mock_disk = MagicMock()
         mock_disk.percent = 40.0
-        mock_disk.used = 200 * 1024 ** 3
-        mock_disk.total = 500 * 1024 ** 3
+        mock_disk.used = 200 * 1024**3
+        mock_disk.total = 500 * 1024**3
         mock_net = MagicMock()
         mock_net.bytes_sent = 1000
         mock_net.bytes_recv = 2000
@@ -150,6 +154,7 @@ class TestMetricsCollector:
 
 # ── StatusReporter ────────────────────────────────────────────────────────────
 
+
 class TestStatusReporter:
     def test_format_status_no_data(self, reporter):
         text = reporter.format_status()
@@ -174,8 +179,11 @@ class TestStatusReporter:
 
     def test_format_stats_with_history(self, reporter, collector):
         import dataclasses
+
         for i in range(10):
-            collector._history.append(dataclasses.asdict(make_metrics(cpu_percent=float(50 + i))))
+            collector._history.append(
+                dataclasses.asdict(make_metrics(cpu_percent=float(50 + i)))
+            )
         text = reporter.format_stats()
         assert "24h Statistics" in text
         assert "CPU" in text
@@ -186,6 +194,7 @@ class TestStatusReporter:
 
     def test_format_hourly_with_data(self, reporter, collector):
         import dataclasses
+
         collector._history.append(dataclasses.asdict(make_metrics()))
         text = reporter.format_hourly_report()
         assert "Hourly Report" in text
@@ -193,12 +202,15 @@ class TestStatusReporter:
 
 # ── AlertManager ──────────────────────────────────────────────────────────────
 
+
 class TestAlertManager:
     @pytest.mark.asyncio
     async def test_ram_alert_fires_once(self, alert_manager, event_bus):
         received = []
+
         async def collect(e):
             received.append(e)
+
         event_bus.subscribe(AlertEvent, collect)
         await event_bus.start()
 
@@ -210,14 +222,20 @@ class TestAlertManager:
         await asyncio.sleep(0.05)
         await event_bus.stop()
 
-        alerts = [e for e in received if isinstance(e, AlertEvent) and e.alert_type == "ram_high"]
+        alerts = [
+            e
+            for e in received
+            if isinstance(e, AlertEvent) and e.alert_type == "ram_high"
+        ]
         assert len(alerts) == 1
 
     @pytest.mark.asyncio
     async def test_alert_clears_when_resolved(self, alert_manager, event_bus):
         cleared = []
+
         async def collect(e):
             cleared.append(e)
+
         event_bus.subscribe(AlertClearedEvent, collect)
         await event_bus.start()
 
@@ -227,14 +245,20 @@ class TestAlertManager:
         await asyncio.sleep(0.05)
         await event_bus.stop()
 
-        clear_events = [e for e in cleared if isinstance(e, AlertClearedEvent) and e.alert_type == "ram_high"]
+        clear_events = [
+            e
+            for e in cleared
+            if isinstance(e, AlertClearedEvent) and e.alert_type == "ram_high"
+        ]
         assert len(clear_events) == 1
 
     @pytest.mark.asyncio
     async def test_ram_no_alert_below_threshold(self, alert_manager, event_bus):
         received = []
+
         async def collect(e):
             received.append(e)
+
         event_bus.subscribe(AlertEvent, collect)
         await event_bus.start()
 
@@ -248,8 +272,10 @@ class TestAlertManager:
     @pytest.mark.asyncio
     async def test_disk_alert(self, alert_manager, event_bus):
         received = []
+
         async def collect(e):
             received.append(e)
+
         event_bus.subscribe(AlertEvent, collect)
         await event_bus.start()
 
@@ -265,8 +291,10 @@ class TestAlertManager:
     @pytest.mark.asyncio
     async def test_ssh_brute_force_alert(self, alert_manager, event_bus):
         received = []
+
         async def collect(e):
             received.append(e)
+
         event_bus.subscribe(AlertEvent, collect)
         await event_bus.start()
 
@@ -281,12 +309,16 @@ class TestAlertManager:
     @pytest.mark.asyncio
     async def test_ssh_no_alert_below_threshold(self, alert_manager, event_bus):
         received = []
+
         async def collect(e):
             received.append(e)
+
         event_bus.subscribe(AlertEvent, collect)
         await event_bus.start()
 
-        await alert_manager.evaluate(make_metrics(ssh_auth_failures_last_min=3))  # below 5
+        await alert_manager.evaluate(
+            make_metrics(ssh_auth_failures_last_min=3)
+        )  # below 5
 
         await asyncio.sleep(0.05)
         await event_bus.stop()
@@ -296,8 +328,10 @@ class TestAlertManager:
     @pytest.mark.asyncio
     async def test_tunnel_instability_alert(self, alert_manager, event_bus):
         received = []
+
         async def collect(e):
             received.append(e)
+
         event_bus.subscribe(AlertEvent, collect)
         await event_bus.start()
 
@@ -313,10 +347,14 @@ class TestAlertManager:
         assert len(alerts) == 1
 
     @pytest.mark.asyncio
-    async def test_tunnel_instability_no_alert_below_threshold(self, alert_manager, event_bus):
+    async def test_tunnel_instability_no_alert_below_threshold(
+        self, alert_manager, event_bus
+    ):
         received = []
+
         async def collect(e):
             received.append(e)
+
         event_bus.subscribe(AlertEvent, collect)
         await event_bus.start()
 
@@ -333,8 +371,10 @@ class TestAlertManager:
     async def test_alert_refires_after_clear(self, alert_manager, event_bus):
         """After clearing, the alert can fire again on next crossing."""
         received = []
+
         async def collect(e):
             received.append(e)
+
         event_bus.subscribe(AlertEvent, collect)
         await event_bus.start()
 
@@ -345,7 +385,11 @@ class TestAlertManager:
         await asyncio.sleep(0.1)
         await event_bus.stop()
 
-        alerts = [e for e in received if isinstance(e, AlertEvent) and e.alert_type == "disk_high"]
+        alerts = [
+            e
+            for e in received
+            if isinstance(e, AlertEvent) and e.alert_type == "disk_high"
+        ]
         assert len(alerts) == 2
 
     def test_active_alerts_property(self, alert_manager):

@@ -58,9 +58,7 @@ class SessionExporter:
         if callable(get_msgs):
             messages = await get_msgs(session_id, limit=500) or []
 
-        session_dict = (
-            session if isinstance(session, dict) else session.__dict__
-        )
+        session_dict = session if isinstance(session, dict) else session.__dict__
 
         if fmt == ExportFormat.MARKDOWN:
             content = self._to_markdown(session_dict, messages)
@@ -109,9 +107,7 @@ class SessionExporter:
             lines.append("---\n")
         return "\n".join(lines)
 
-    def _to_json(
-        self, session: Dict[str, Any], messages: List[Dict[str, Any]]
-    ) -> str:
+    def _to_json(self, session: Dict[str, Any], messages: List[Dict[str, Any]]) -> str:
         def _iso(v: Any) -> Optional[str]:
             if v is None:
                 return None
@@ -137,9 +133,7 @@ class SessionExporter:
         }
         return json.dumps(data, indent=2, ensure_ascii=False)
 
-    def _to_html(
-        self, session: Dict[str, Any], messages: List[Dict[str, Any]]
-    ) -> str:
+    def _to_html(self, session: Dict[str, Any], messages: List[Dict[str, Any]]) -> str:
         md = self._to_markdown(session, messages)
         body = self._md_to_html(md)
         sid = str(session.get("id", ""))[:8]
@@ -173,7 +167,9 @@ hr{{border:none;border-top:1px solid #e1e4e8;margin:30px 0}}
     def _md_to_html(self, md: str) -> str:
         html = md
         # Code blocks (must come before inline code)
-        html = re.sub(r"```[\w]*\n(.*?)```", r"<pre><code>\1</code></pre>", html, flags=re.DOTALL)
+        html = re.sub(
+            r"```[\w]*\n(.*?)```", r"<pre><code>\1</code></pre>", html, flags=re.DOTALL
+        )
         # Inline code
         html = re.sub(r"`([^`]+)`", r"<code>\1</code>", html)
         # Bold

@@ -33,7 +33,9 @@ class VoiceHandler:
 
     def __init__(self, config: Settings) -> None:
         self.config = config
-        self._max_bytes: int = getattr(config, "voice_max_file_size_bytes", _DEFAULT_MAX_BYTES)
+        self._max_bytes: int = getattr(
+            config, "voice_max_file_size_bytes", _DEFAULT_MAX_BYTES
+        )
         self._provider: str = getattr(config, "voice_provider", "openai")
         self._mistral_client: Optional[Any] = None
         self._openai_client: Optional[Any] = None
@@ -80,7 +82,9 @@ class VoiceHandler:
         if hasattr(duration, "total_seconds"):
             duration = int(duration.total_seconds())
 
-        return ProcessedVoice(prompt=prompt, transcription=transcription, duration=int(duration))
+        return ProcessedVoice(
+            prompt=prompt, transcription=transcription, duration=int(duration)
+        )
 
     # ── Size guard ────────────────────────────────────────────────────────────
 

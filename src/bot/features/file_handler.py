@@ -43,26 +43,78 @@ class CodebaseAnalysis:
 # Extensions treated as source code
 _CODE_EXTENSIONS: frozenset[str] = frozenset(
     {
-        ".py", ".js", ".ts", ".jsx", ".tsx",
-        ".java", ".cpp", ".c", ".h", ".go",
-        ".rs", ".rb", ".php", ".swift", ".kt",
-        ".scala", ".r", ".jl", ".lua", ".pl",
-        ".sh", ".bash", ".zsh", ".fish", ".ps1",
-        ".sql", ".html", ".css", ".scss", ".sass",
-        ".less", ".vue", ".yaml", ".yml", ".json",
-        ".xml", ".toml", ".ini", ".cfg",
-        ".dockerfile", ".makefile", ".cmake",
+        ".py",
+        ".js",
+        ".ts",
+        ".jsx",
+        ".tsx",
+        ".java",
+        ".cpp",
+        ".c",
+        ".h",
+        ".go",
+        ".rs",
+        ".rb",
+        ".php",
+        ".swift",
+        ".kt",
+        ".scala",
+        ".r",
+        ".jl",
+        ".lua",
+        ".pl",
+        ".sh",
+        ".bash",
+        ".zsh",
+        ".fish",
+        ".ps1",
+        ".sql",
+        ".html",
+        ".css",
+        ".scss",
+        ".sass",
+        ".less",
+        ".vue",
+        ".yaml",
+        ".yml",
+        ".json",
+        ".xml",
+        ".toml",
+        ".ini",
+        ".cfg",
+        ".dockerfile",
+        ".makefile",
+        ".cmake",
     }
 )
 
 _LANGUAGE_MAP: Dict[str, str] = {
-    ".py": "Python", ".js": "JavaScript", ".ts": "TypeScript",
-    ".java": "Java", ".cpp": "C++", ".c": "C", ".go": "Go",
-    ".rs": "Rust", ".rb": "Ruby", ".php": "PHP", ".swift": "Swift",
-    ".kt": "Kotlin", ".scala": "Scala", ".r": "R", ".jl": "Julia",
-    ".lua": "Lua", ".pl": "Perl", ".sh": "Shell", ".sql": "SQL",
-    ".html": "HTML", ".css": "CSS", ".vue": "Vue",
-    ".yaml": "YAML", ".yml": "YAML", ".json": "JSON", ".xml": "XML",
+    ".py": "Python",
+    ".js": "JavaScript",
+    ".ts": "TypeScript",
+    ".java": "Java",
+    ".cpp": "C++",
+    ".c": "C",
+    ".go": "Go",
+    ".rs": "Rust",
+    ".rb": "Ruby",
+    ".php": "PHP",
+    ".swift": "Swift",
+    ".kt": "Kotlin",
+    ".scala": "Scala",
+    ".r": "R",
+    ".jl": "Julia",
+    ".lua": "Lua",
+    ".pl": "Perl",
+    ".sh": "Shell",
+    ".sql": "SQL",
+    ".html": "HTML",
+    ".css": "CSS",
+    ".vue": "Vue",
+    ".yaml": "YAML",
+    ".yml": "YAML",
+    ".json": "JSON",
+    ".xml": "XML",
 }
 
 # Skip these directories when scanning code
@@ -184,7 +236,11 @@ class FileHandler:
         return ProcessedFile(
             type="code",
             prompt=prompt,
-            metadata={"language": lang, "lines": len(content.splitlines()), "size": path.stat().st_size},
+            metadata={
+                "language": lang,
+                "lines": len(content.splitlines()),
+                "size": path.stat().st_size,
+            },
         )
 
     async def _process_text(self, path: Path, ctx: str) -> ProcessedFile:
@@ -232,7 +288,14 @@ class FileHandler:
 
         def _key(p: Path) -> tuple:
             name = p.name.lower()
-            if name in {"main.py", "index.js", "app.py", "server.py", "main.go", "main.rs"}:
+            if name in {
+                "main.py",
+                "index.js",
+                "app.py",
+                "server.py",
+                "main.go",
+                "main.rs",
+            }:
                 return (0, name)
             if name.startswith("index."):
                 return (1, name)
@@ -265,10 +328,22 @@ class FileHandler:
 
     def _find_entry_points(self, directory: Path) -> List[str]:
         patterns = [
-            "main.py", "app.py", "server.py", "__main__.py",
-            "index.js", "app.js", "server.js", "main.js",
-            "main.go", "main.rs", "main.cpp", "main.c",
-            "Main.java", "App.java", "index.php", "index.html",
+            "main.py",
+            "app.py",
+            "server.py",
+            "__main__.py",
+            "index.js",
+            "app.js",
+            "server.js",
+            "main.js",
+            "main.go",
+            "main.rs",
+            "main.cpp",
+            "main.c",
+            "Main.java",
+            "App.java",
+            "index.php",
+            "index.html",
         ]
         found: List[str] = []
         for p in patterns:

@@ -121,9 +121,9 @@ class ClaudeSDKRunner:
     ) -> ClaudeResponse:
         """Execute via claude-agent-sdk."""
         from claude_agent_sdk import (
+            AssistantMessage,
             ClaudeAgentOptions,
             ClaudeSDKClient,
-            AssistantMessage,
             ResultMessage,
         )
 
