@@ -268,17 +268,17 @@ async def cmd_ssh(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         return
 
     state = tunnel_mgr.get_state()
-    if state.get("status") == "up":
-        host = state.get("host", "?")
-        port = state.get("port", "?")
+    if state.status == "up":
+        host = state.ssh_host or "?"
+        port = state.ssh_port or "?"
         await update.message.reply_text(
             f"<b>SSH Tunnel: UP</b>\n\n"
-            f"<code>ssh user@{escape_html(str(host))} -p {port}</code>",
+            f"<code>ssh hakan@{escape_html(str(host))} -p {port}</code>",
             parse_mode="HTML",
         )
     else:
         await update.message.reply_text(
-            f"<b>SSH Tunnel: {escape_html(state.get('status', 'unknown').upper())}</b>",
+            f"<b>SSH Tunnel: {escape_html(state.status.upper())}</b>",
             parse_mode="HTML",
         )
 

@@ -191,7 +191,7 @@ class ClaudeSDKRunner:
                          so MCP servers, plugins, and slash commands work.
                          Only enable for admin users.
         """
-        cmd: List[str] = [self._cli, "--output-format", "text", "--no-verbose"]
+        cmd: List[str] = [self._cli, "--output-format", "text"]
 
         if full_access:
             cmd += ["--dangerously-skip-permissions"]
