@@ -51,11 +51,10 @@ class TunnelNotifier:
     # ── Handlers ──────────────────────────────────────────────────────────────
 
     async def _on_state_change(self, event: Event) -> None:
-        if not isinstance(event, TunnelStateChangeEvent):
+        prev = getattr(event, "previous_state", None)
+        new = getattr(event, "new_state", None)
+        if prev is None or new is None:
             return
-
-        prev = event.previous_state
-        new = event.new_state
 
         # Only interesting transitions
         if new not in ("up", "down") or prev == new:
@@ -72,7 +71,8 @@ class TunnelNotifier:
         await self._send(msg)
 
     async def _on_retry_exhausted(self, event: Event) -> None:
-        if not isinstance(event, TunnelRetryExhaustedEvent):
+        attempts = getattr(event, "attempts", None)
+        if attempts is None:
             return
 
         now = time.monotonic()
