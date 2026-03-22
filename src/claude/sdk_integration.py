@@ -70,14 +70,23 @@ class ClaudeSDKRunner:
         working_dir: Path,
         session_id: Optional[str] = None,
         continue_session: bool = False,
+        full_access: bool = False,
     ) -> ClaudeResponse:
-        """Execute a prompt, honouring the concurrency semaphore and timeout."""
+        """Execute a prompt, honouring the concurrency semaphore and timeout.
+
+        Args:
+            full_access: If True, run CLI with --dangerously-skip-permissions
+                         enabling MCP servers, plugins, and slash commands.
+                         Only set True for admin users.
+        """
         start = asyncio.get_event_loop().time()
 
         async with _semaphore:
             try:
                 response = await asyncio.wait_for(
-                    self._execute(prompt, working_dir, session_id, continue_session),
+                    self._execute(
+                        prompt, working_dir, session_id, continue_session, full_access
+                    ),
                     timeout=self._timeout,
                 )
             except asyncio.TimeoutError:
@@ -95,8 +104,16 @@ class ClaudeSDKRunner:
         working_dir: Path,
         session_id: Optional[str],
         continue_session: bool,
+        full_access: bool = False,
     ) -> ClaudeResponse:
         """Try SDK, fall back to CLI."""
+        if full_access:
+            # Full access mode always uses CLI with --dangerously-skip-permissions
+            # so MCP servers, plugins, hooks, and slash commands all work
+            return await self._run_cli(
+                prompt, working_dir, session_id, full_access=True
+            )
+
         try:
             return await self._run_sdk(
                 prompt, working_dir, session_id, continue_session
@@ -105,7 +122,6 @@ class ClaudeSDKRunner:
             logger.info("claude-agent-sdk not available, using CLI fallback")
             return await self._run_cli(prompt, working_dir, session_id)
         except Exception as exc:
-            # If SDK auth fails try CLI
             if "auth" in str(exc).lower() or "api_key" in str(exc).lower():
                 logger.warning("SDK auth error, trying CLI fallback", error=str(exc))
                 return await self._run_cli(prompt, working_dir, session_id)
@@ -166,9 +182,19 @@ class ClaudeSDKRunner:
         prompt: str,
         working_dir: Path,
         session_id: Optional[str],
+        full_access: bool = False,
     ) -> ClaudeResponse:
-        """Execute via claude CLI subprocess."""
+        """Execute via claude CLI subprocess.
+
+        Args:
+            full_access: If True, run with --dangerously-skip-permissions
+                         so MCP servers, plugins, and slash commands work.
+                         Only enable for admin users.
+        """
         cmd: List[str] = [self._cli, "--output-format", "text", "--no-verbose"]
+
+        if full_access:
+            cmd += ["--dangerously-skip-permissions"]
 
         if session_id:
             cmd += ["--resume", session_id]

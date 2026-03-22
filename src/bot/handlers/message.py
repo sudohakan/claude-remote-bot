@@ -39,12 +39,15 @@ async def handle_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None
         return
 
     access = ctx.bot_data.get("access_manager")
-    ctx.bot_data.get("settings")
     access_level = "sandbox"
+    role = "user"
     if access:
         level = await access.get_access_level(user.id)
         if level:
             access_level = level
+        user_role = await access.get_role(user.id)
+        if user_role:
+            role = user_role
 
     # Show "typing…" indicator
     await ctx.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
@@ -55,6 +58,7 @@ async def handle_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None
             prompt=text,
             access_level=access_level,
             username=user.username,
+            role=role,
         )
     except ClaudeTimeoutError:
         await message.reply_text(

@@ -41,6 +41,7 @@ class ClaudeFacade:
         access_level: str = "sandbox",
         username: Optional[str] = None,
         new_session: bool = False,
+        role: str = "user",
     ) -> ClaudeResponse:
         """Run a Claude prompt for a user, managing their session.
 
@@ -68,6 +69,7 @@ class ClaudeFacade:
                 working_dir=session.working_dir,
                 session_id=session.session_id,
                 continue_session=not new_session,
+                full_access=(role == "admin"),
             )
         except ClaudeError:
             raise
