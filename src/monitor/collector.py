@@ -209,7 +209,7 @@ class MetricsCollector:
                 stderr=asyncio.subprocess.DEVNULL,
             )
             stdout, _ = await proc.communicate()
-            lines = [l for l in stdout.decode().splitlines() if l.strip()]
+            lines = [ln for ln in stdout.decode().splitlines() if ln.strip()]
             return len(lines)
         except Exception:
             return 0

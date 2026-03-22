@@ -1,6 +1,5 @@
 """Tests for security/auth.py, security/rate_limiter.py, and invite flow."""
 
-import asyncio
 from datetime import UTC, datetime, timedelta
 
 import pytest

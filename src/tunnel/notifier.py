@@ -15,7 +15,7 @@ import structlog
 from telegram import Bot
 from telegram.error import TelegramError
 
-from src.events.bus import Event, EventBus
+from src.events.bus import EventBus
 from src.events.types import TunnelRetryExhaustedEvent, TunnelStateChangeEvent
 
 logger = structlog.get_logger(__name__)

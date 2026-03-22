@@ -5,9 +5,7 @@ Instead we test the utility functions, middleware logic, and handler logic
 using mocked Update/Context objects.
 """
 
-from unittest.mock import AsyncMock, MagicMock, patch
-
-import pytest
+from unittest.mock import AsyncMock, MagicMock
 
 from src.bot.utils.constants import (
     BOT_VERSION,
