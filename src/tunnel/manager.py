@@ -13,6 +13,7 @@ Anti-spam: only publish events on actual state CHANGES.
 
 import asyncio
 import json
+import os
 import subprocess
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
@@ -115,12 +116,14 @@ class TunnelManager:
                 "--log=stdout",
                 "--log-level=warn",
             ]
+            env = os.environ.copy()
             if self._authtoken:
-                cmd += [f"--authtoken={self._authtoken}"]
+                env["NGROK_AUTHTOKEN"] = self._authtoken
             self._process = subprocess.Popen(
                 cmd,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
+                env=env,
             )
             logger.info("ngrok spawned", pid=self._process.pid)
         except FileNotFoundError:
