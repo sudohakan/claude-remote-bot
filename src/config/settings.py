@@ -129,6 +129,7 @@ class Settings(BaseSettings):
         """Warn if tunnel is enabled without ngrok token."""
         if self.enable_tunnel and not self.ngrok_authtoken:
             import warnings
+
             warnings.warn(
                 "ENABLE_TUNNEL is true but NGROK_AUTHTOKEN is not set",
                 stacklevel=2,
