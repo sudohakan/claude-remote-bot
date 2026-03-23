@@ -65,7 +65,6 @@ class Settings(BaseSettings):
     tunnel_max_retries: int = Field(5, description="Max ngrok restart attempts")
 
     # ── System Monitor ────────────────────────────────────────────────────────
-    monitor_enabled: bool = Field(True, description="Enable system metrics collection")
     monitor_collect_interval_seconds: int = Field(
         60, description="Metrics collection interval"
     )
@@ -129,8 +128,11 @@ class Settings(BaseSettings):
     def validate_tunnel_dependencies(self) -> "Settings":
         """Warn if tunnel is enabled without ngrok token."""
         if self.enable_tunnel and not self.ngrok_authtoken:
-            # Non-fatal: tunnel manager will handle the missing token at startup
-            pass
+            import warnings
+            warnings.warn(
+                "ENABLE_TUNNEL is true but NGROK_AUTHTOKEN is not set",
+                stacklevel=2,
+            )
         return self
 
     # ── Convenience properties ────────────────────────────────────────────────
