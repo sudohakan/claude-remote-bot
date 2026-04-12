@@ -670,7 +670,7 @@ async def cmd_remote(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     # 3. Son session dosyaları (konu bilgisi)
     try:
         result = subprocess.run(
-            ["bash", "-c", "ls -t /home/hakan/.claude/sessions/*.md 2>/dev/null | head -5"],
+            ["bash", "-c", f"ls -t {os.path.expanduser('~')}/.claude/sessions/*.md 2>/dev/null | head -5"],
             capture_output=True, text=True, timeout=5,
         )
         session_files = [f for f in result.stdout.strip().split("\n") if f.strip()]
