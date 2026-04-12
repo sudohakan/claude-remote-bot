@@ -23,6 +23,8 @@ Admin-only commands:
   /alerts [on|off]— toggle hourly reports
 """
 
+import os
+
 import structlog
 from telegram import Update
 from telegram.ext import ContextTypes
@@ -665,8 +667,8 @@ async def cmd_remote(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         )
         if result.stdout.strip():
             tmux_lines = result.stdout.strip().split("\n")
-            attached = [l.split()[0] for l in tmux_lines if l.endswith(" 1")]
-            detached = [l.split()[0] for l in tmux_lines if l.endswith(" 0")]
+            attached = [ln.split()[0] for ln in tmux_lines if ln.endswith(" 1")]
+            detached = [ln.split()[0] for ln in tmux_lines if ln.endswith(" 0")]
             lines.append(
                 f"\n🖥 <b>Tmux:</b> {len(attached)} aktif, {len(detached)} arka plan"
             )
@@ -778,7 +780,7 @@ for r in results:
                 pass
 
         if rc_items:
-            lines.append(f"\n🔗 <b>Remote Control</b>")
+            lines.append("\n🔗 <b>Remote Control</b>")
             for i, item in enumerate(rc_items, 1):
                 topic = escape_html(item.get("topic", "")[:45])
                 age = item.get("age", "?")
