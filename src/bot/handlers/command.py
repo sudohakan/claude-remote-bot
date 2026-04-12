@@ -620,8 +620,8 @@ async def cmd_alerts(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def cmd_remote(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     """Show active Claude sessions, tmux state, and remote control link."""
-    import subprocess
     import json as _json
+    import subprocess
 
     user = update.effective_user
     if user is None:
