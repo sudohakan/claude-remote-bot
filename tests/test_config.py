@@ -16,7 +16,7 @@ class TestSettings:
     def test_defaults(self, minimal_settings):
         s = minimal_settings
         assert s.claude_max_turns == 10
-        assert s.claude_timeout_seconds == 120
+        assert s.claude_timeout_seconds == 600
         assert s.claude_max_cost_per_user == 5.0
         assert s.enable_tunnel is False
         assert s.enable_monitor is True

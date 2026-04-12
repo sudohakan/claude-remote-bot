@@ -642,7 +642,9 @@ async def cmd_remote(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     try:
         result = subprocess.run(
             ["bash", "-c", "pgrep -x claude | wc -l"],
-            capture_output=True, text=True, timeout=5,
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         count = result.stdout.strip()
         lines.append(f"⚡ <b>Aktif Claude session:</b> {count}")
@@ -652,14 +654,22 @@ async def cmd_remote(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     # 2. Tmux session'ları (attached/unattached)
     try:
         result = subprocess.run(
-            ["bash", "-c", "tmux ls -F '#{session_name} #{session_attached}' 2>/dev/null"],
-            capture_output=True, text=True, timeout=5,
+            [
+                "bash",
+                "-c",
+                "tmux ls -F '#{session_name} #{session_attached}' 2>/dev/null",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         if result.stdout.strip():
             tmux_lines = result.stdout.strip().split("\n")
             attached = [l.split()[0] for l in tmux_lines if l.endswith(" 1")]
             detached = [l.split()[0] for l in tmux_lines if l.endswith(" 0")]
-            lines.append(f"\n🖥 <b>Tmux:</b> {len(attached)} aktif, {len(detached)} arka plan")
+            lines.append(
+                f"\n🖥 <b>Tmux:</b> {len(attached)} aktif, {len(detached)} arka plan"
+            )
             for a in attached:
                 lines.append(f"  ✅ tmux {a}")
             for d in detached:
@@ -670,8 +680,14 @@ async def cmd_remote(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     # 3. Son session dosyaları (konu bilgisi)
     try:
         result = subprocess.run(
-            ["bash", "-c", f"ls -t {os.path.expanduser('~')}/.claude/sessions/*.md 2>/dev/null | head -5"],
-            capture_output=True, text=True, timeout=5,
+            [
+                "bash",
+                "-c",
+                f"ls -t {os.path.expanduser('~')}/.claude/sessions/*.md 2>/dev/null | head -5",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         session_files = [f for f in result.stdout.strip().split("\n") if f.strip()]
         if session_files:
@@ -681,7 +697,9 @@ async def cmd_remote(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
                     fname = sf.split("/")[-1].replace(".md", "")
                     head_result = subprocess.run(
                         ["head", "-5", sf],
-                        capture_output=True, text=True, timeout=3,
+                        capture_output=True,
+                        text=True,
+                        timeout=3,
                     )
                     topic = ""
                     for line in head_result.stdout.split("\n"):
@@ -698,7 +716,10 @@ async def cmd_remote(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     # 4. Remote control links — extract from active JSONL transcripts
     try:
         result = subprocess.run(
-            ["bash", "-c", r"""
+            [
+                "bash",
+                "-c",
+                r"""
 python3 -c "
 import os, glob, time, re, json
 base = os.path.expanduser('~/.claude/projects/-mnt-c-Users-Hakan/')
@@ -737,8 +758,11 @@ for f in files:
 for r in results:
     print(r)
 "
-"""],
-            capture_output=True, text=True, timeout=10,
+""",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=10,
         )
         rc_items = []
         seen_links = set()
@@ -773,13 +797,19 @@ for r in results:
     try:
         result = subprocess.run(
             ["bash", "-c", "pgrep -f 'bun.*claude-peers/server.ts' | wc -l"],
-            capture_output=True, text=True, timeout=5,
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         bun_count = int(result.stdout.strip())
-        claude_count = int(subprocess.run(
-            ["bash", "-c", "pgrep -x claude | wc -l"],
-            capture_output=True, text=True, timeout=5,
-        ).stdout.strip())
+        claude_count = int(
+            subprocess.run(
+                ["bash", "-c", "pgrep -x claude | wc -l"],
+                capture_output=True,
+                text=True,
+                timeout=5,
+            ).stdout.strip()
+        )
         if bun_count > claude_count:
             orphans = bun_count - claude_count
             lines.append(f"\n⚠️ {orphans} orphan peers process tespit edildi")
