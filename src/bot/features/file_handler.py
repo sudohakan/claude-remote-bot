@@ -225,9 +225,22 @@ class FileHandler:
                 if total > _MAX_ARCHIVE_BYTES:
                     raise ValueError("Archive too large (> 100 MB)")
                 for member in tf.getmembers():
-                    if member.name.startswith("/") or ".." in member.name:
+                    if member.issym() or member.islnk() or member.isdev():
+                        raise ValueError("Archive contains unsafe member types")
+                    target = (dest / member.name).resolve(strict=False)
+                    if not target.is_relative_to(dest.resolve()):
+                        raise ValueError("Archive contains unsafe paths")
+                    if member.isdir():
+                        target.mkdir(parents=True, exist_ok=True)
                         continue
-                    tf.extract(member, dest)
+                    if not member.isfile():
+                        continue
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    src = tf.extractfile(member)
+                    if src is None:
+                        continue
+                    with src, open(target, "wb") as dst:
+                        shutil.copyfileobj(src, dst)
 
     async def _process_code(self, path: Path, ctx: str) -> ProcessedFile:
         content = path.read_text(encoding="utf-8", errors="ignore")

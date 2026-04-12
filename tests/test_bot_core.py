@@ -5,7 +5,7 @@ Instead we test the utility functions, middleware logic, and handler logic
 using mocked Update/Context objects.
 """
 
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from src.bot.utils.constants import (
     BOT_VERSION,
@@ -213,3 +213,44 @@ class TestSecurityMiddleware:
         await security_middleware(handler, update, {})
         handler.assert_not_called()
         update.effective_message.reply_text.assert_called_once()
+
+
+class TestRemoteBotErrorHandler:
+    async def test_on_error_replies_to_user(self):
+        from src.bot.core import RemoteBot
+
+        bot = RemoteBot(MagicMock(), {})
+        update = MagicMock()
+        update.effective_user.id = 42
+        update.effective_message.reply_text = AsyncMock()
+        context = MagicMock()
+        context.error = RuntimeError("boom")
+
+        await bot._on_error(update, context)
+
+        update.effective_message.reply_text.assert_awaited_once_with(
+            "An unexpected error occurred. Please try again."
+        )
+
+    async def test_on_error_logs_reply_failures(self):
+        from src.bot.core import RemoteBot
+
+        bot = RemoteBot(MagicMock(), {})
+        update = MagicMock()
+        update.effective_user.id = 42
+        update.effective_message.reply_text = AsyncMock(
+            side_effect=RuntimeError("send failed")
+        )
+        context = MagicMock()
+        context.error = RuntimeError("boom")
+
+        with patch("src.bot.core.logger") as mock_logger:
+            await bot._on_error(update, context)
+
+        update.effective_message.reply_text.assert_awaited_once()
+        mock_logger.error.assert_called_once()
+        mock_logger.warning.assert_called_once_with(
+            "Failed to send user-facing error reply",
+            error="send failed",
+            error_type="RuntimeError",
+        )

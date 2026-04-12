@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     )
     claude_model: Optional[str] = Field(None, description="Claude model override")
     claude_max_turns: int = Field(10, description="Max conversation turns per request")
-    claude_timeout_seconds: int = Field(120, description="Claude execution timeout")
+    claude_timeout_seconds: int = Field(600, description="Claude execution timeout")
     claude_max_cost_per_user: float = Field(
         5.0, description="Daily cost cap per user (USD)"
     )

@@ -613,3 +613,181 @@ async def cmd_alerts(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
             "Use /alerts on or /alerts off",
             parse_mode="HTML",
         )
+
+
+# ── /remote ──────────────────────────────────────────────────────────────────
+
+
+async def cmd_remote(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
+    """Show active Claude sessions, tmux state, and remote control link."""
+    import subprocess
+    import json as _json
+
+    user = update.effective_user
+    if user is None:
+        return
+
+    access = _access_mgr(ctx)
+    settings = _settings(ctx)
+    is_admin = (settings and user.id == settings.admin_telegram_id) or (
+        access and await access.is_admin(user.id)
+    )
+    if not is_admin:
+        await update.message.reply_text("Admin only.")
+        return
+
+    lines = []
+
+    # 1. Aktif claude CLI process sayısı (dashboard/bot/peers hariç)
+    try:
+        result = subprocess.run(
+            ["bash", "-c", "pgrep -x claude | wc -l"],
+            capture_output=True, text=True, timeout=5,
+        )
+        count = result.stdout.strip()
+        lines.append(f"⚡ <b>Aktif Claude session:</b> {count}")
+    except Exception:
+        lines.append("⚡ <b>Aktif Claude session:</b> ?")
+
+    # 2. Tmux session'ları (attached/unattached)
+    try:
+        result = subprocess.run(
+            ["bash", "-c", "tmux ls -F '#{session_name} #{session_attached}' 2>/dev/null"],
+            capture_output=True, text=True, timeout=5,
+        )
+        if result.stdout.strip():
+            tmux_lines = result.stdout.strip().split("\n")
+            attached = [l.split()[0] for l in tmux_lines if l.endswith(" 1")]
+            detached = [l.split()[0] for l in tmux_lines if l.endswith(" 0")]
+            lines.append(f"\n🖥 <b>Tmux:</b> {len(attached)} aktif, {len(detached)} arka plan")
+            for a in attached:
+                lines.append(f"  ✅ tmux {a}")
+            for d in detached:
+                lines.append(f"  💤 tmux {d}")
+    except Exception:
+        pass
+
+    # 3. Son session dosyaları (konu bilgisi)
+    try:
+        result = subprocess.run(
+            ["bash", "-c", "ls -t /home/hakan/.claude/sessions/*.md 2>/dev/null | head -5"],
+            capture_output=True, text=True, timeout=5,
+        )
+        session_files = [f for f in result.stdout.strip().split("\n") if f.strip()]
+        if session_files:
+            lines.append("\n📋 <b>Son session'lar:</b>")
+            for sf in session_files[:5]:
+                try:
+                    fname = sf.split("/")[-1].replace(".md", "")
+                    head_result = subprocess.run(
+                        ["head", "-5", sf],
+                        capture_output=True, text=True, timeout=3,
+                    )
+                    topic = ""
+                    for line in head_result.stdout.split("\n"):
+                        if line.startswith("# "):
+                            topic = line[2:].strip()
+                            break
+                    display = f"{escape_html(topic[:50])}" if topic else "konu yok"
+                    lines.append(f"  • <code>{fname[:25]}</code> — {display}")
+                except Exception:
+                    pass
+    except Exception:
+        pass
+
+    # 4. Remote control links — extract from active JSONL transcripts
+    try:
+        result = subprocess.run(
+            ["bash", "-c", r"""
+python3 -c "
+import os, glob, time, re, json
+base = os.path.expanduser('~/.claude/projects/-mnt-c-Users-Hakan/')
+files = sorted(glob.glob(base + '*.jsonl'), key=os.path.getmtime, reverse=True)[:5]
+results = []
+for f in files:
+    mtime = os.path.getmtime(f)
+    age_h = (time.time() - mtime) / 3600
+    if age_h > 24:
+        continue
+    with open(f) as fh:
+        content = fh.read()
+    links = set(re.findall(r'session_0[A-Za-z0-9]{20,30}', content))
+    if not links:
+        continue
+    # İlk user mesajından konu çıkar
+    topic = ''
+    for line in content.split('\n'):
+        try:
+            d = json.loads(line)
+            if d.get('type') == 'human' and d.get('message',{}).get('content'):
+                c = d['message']['content']
+                if isinstance(c, str):
+                    topic = c[:50]
+                elif isinstance(c, list):
+                    for block in c:
+                        if isinstance(block, dict) and block.get('text'):
+                            topic = block['text'][:50]
+                            break
+                if topic:
+                    break
+        except: pass
+    age_str = f'{int(age_h*60)}dk' if age_h < 1 else f'{age_h:.1f}sa'
+    for link in links:
+        results.append(json.dumps({'link': link, 'topic': topic, 'age': age_str}))
+for r in results:
+    print(r)
+"
+"""],
+            capture_output=True, text=True, timeout=10,
+        )
+        rc_items = []
+        seen_links = set()
+        for line in result.stdout.strip().split("\n"):
+            if not line.strip():
+                continue
+            try:
+                item = _json.loads(line)
+                if item["link"] not in seen_links:
+                    seen_links.add(item["link"])
+                    rc_items.append(item)
+            except Exception:
+                pass
+
+        if rc_items:
+            lines.append(f"\n🔗 <b>Remote Control</b>")
+            for i, item in enumerate(rc_items, 1):
+                topic = escape_html(item.get("topic", "")[:45])
+                age = item.get("age", "?")
+                link = f"https://claude.ai/code/{item['link']}"
+                lines.append(
+                    f"\n<b>{i}.</b> <a href=\"{link}\">Session {item['link'][-8:]}</a> · {age} önce"
+                )
+                if topic:
+                    lines.append(f"   📝 <i>{topic}</i>")
+        else:
+            lines.append("\n🔗 <b>Remote Control:</b> aktif session yok")
+    except Exception:
+        lines.append("\n🔗 <b>Remote Control:</b>\nhttps://claude.ai/code")
+
+    # 5. Orphan process uyarısı
+    try:
+        result = subprocess.run(
+            ["bash", "-c", "pgrep -f 'bun.*claude-peers/server.ts' | wc -l"],
+            capture_output=True, text=True, timeout=5,
+        )
+        bun_count = int(result.stdout.strip())
+        claude_count = int(subprocess.run(
+            ["bash", "-c", "pgrep -x claude | wc -l"],
+            capture_output=True, text=True, timeout=5,
+        ).stdout.strip())
+        if bun_count > claude_count:
+            orphans = bun_count - claude_count
+            lines.append(f"\n⚠️ {orphans} orphan peers process tespit edildi")
+    except Exception:
+        pass
+
+    await update.message.reply_text(
+        "\n".join(lines) if lines else "Aktif session bulunamadı.",
+        parse_mode="HTML",
+        disable_web_page_preview=True,
+    )

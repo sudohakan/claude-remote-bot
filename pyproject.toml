@@ -1,6 +1,6 @@
 [project]
 name = "claude-remote-bot"
-version = "0.1.0"
+version = "1.0.0"
 description = "Multi-user Telegram bot for remote Claude Code access, SSH tunnel management, and system monitoring"
 readme = "README.md"
 license = "MIT"

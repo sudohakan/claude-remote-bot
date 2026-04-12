@@ -24,6 +24,7 @@ from .handlers.command import (
     cmd_new,
     cmd_ping,
     cmd_promote,
+    cmd_remote,
     cmd_revoke,
     cmd_sessions,
     cmd_ssh,
@@ -46,6 +47,7 @@ _BOT_COMMANDS = [
     BotCommand("ssh", "SSH tunnel info"),
     BotCommand("history", "Recent command history"),
     BotCommand("cwd", "Current working directory"),
+    BotCommand("remote", "Active remote control sessions"),
 ]
 
 
@@ -80,6 +82,7 @@ class BotOrchestrator:
         app.add_handler(CommandHandler("revoke", cmd_revoke))
         app.add_handler(CommandHandler("stats", cmd_stats))
         app.add_handler(CommandHandler("sessions", cmd_sessions))
+        app.add_handler(CommandHandler("remote", cmd_remote))
         app.add_handler(CommandHandler("alerts", cmd_alerts))
 
         # Inline keyboards

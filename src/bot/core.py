@@ -186,5 +186,9 @@ class RemoteBot:
                 await update.effective_message.reply_text(
                     "An unexpected error occurred. Please try again."
                 )
-            except Exception:
-                pass
+            except Exception as reply_error:
+                logger.warning(
+                    "Failed to send user-facing error reply",
+                    error=str(reply_error),
+                    error_type=type(reply_error).__name__,
+                )

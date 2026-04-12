@@ -2,7 +2,10 @@
 
 In agentic mode every non-command text message becomes a Claude prompt.
 Rate-limits Claude requests separately from general commands.
+Sends periodic typing indicators and a status message while Claude works.
 """
+
+import asyncio
 
 import structlog
 from telegram import Update
@@ -12,6 +15,18 @@ from src.bot.utils.formatting import escape_html, split_message
 from src.claude.exceptions import ClaudeError, ClaudeTimeoutError
 
 logger = structlog.get_logger(__name__)
+
+_TYPING_INTERVAL_SECONDS = 4
+
+
+async def _keep_typing(chat_id: int, ctx: ContextTypes.DEFAULT_TYPE) -> None:
+    """Send typing action every few seconds until cancelled."""
+    while True:
+        try:
+            await ctx.bot.send_chat_action(chat_id=chat_id, action="typing")
+        except Exception:
+            pass
+        await asyncio.sleep(_TYPING_INTERVAL_SECONDS)
 
 
 async def handle_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
@@ -49,8 +64,11 @@ async def handle_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None
         if user_role:
             role = user_role
 
-    # Show "typing…" indicator
-    await ctx.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
+    chat_id = update.effective_chat.id
+
+    # Send initial status message and start continuous typing indicator
+    status_msg = await message.reply_text("⏳ Üzerinde çalışıyorum...")
+    typing_task = asyncio.create_task(_keep_typing(chat_id, ctx))
 
     try:
         response = await claude.execute(
@@ -61,16 +79,28 @@ async def handle_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None
             role=role,
         )
     except ClaudeTimeoutError:
-        await message.reply_text(
-            "Claude timed out. Try a simpler request or /new to reset."
+        await status_msg.edit_text(
+            "Claude zaman aşımına uğradı. Daha kısa bir istek dene veya /new ile sıfırla."
         )
         return
     except ClaudeError as exc:
-        await message.reply_text(
-            f"Claude error: {escape_html(str(exc))}", parse_mode="HTML"
+        await status_msg.edit_text(
+            f"Claude hatası: {escape_html(str(exc))}", parse_mode="HTML"
         )
         logger.error("Claude error", user_id=user.id, error=str(exc))
         return
+    finally:
+        typing_task.cancel()
+        try:
+            await typing_task
+        except asyncio.CancelledError:
+            pass
+
+    # Delete status message — real response follows
+    try:
+        await status_msg.delete()
+    except Exception:
+        pass
 
     # Log command
     storage = ctx.bot_data.get("storage")

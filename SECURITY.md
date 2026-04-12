@@ -17,7 +17,7 @@ Older versions are not supported. Please upgrade to the latest release.
 Report privately via one of:
 
 - **GitHub Security Advisories** — [New advisory](https://github.com/sudohakan/claude-remote-bot/security/advisories/new) (preferred)
-- **Email** — hakan@finekra.com with subject `[SECURITY] claude-remote-bot`
+- **Email** — sudohakan@users.noreply.github.com with subject `[SECURITY] claude-remote-bot`
 
 Include in your report:
 - Description of the vulnerability
