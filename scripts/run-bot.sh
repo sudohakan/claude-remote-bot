@@ -2,6 +2,14 @@
 # Claude Remote Bot — Single Instance Runner
 # Ensures only one instance runs at a time via PID lock
 
+# PM2 PATH minimal (/usr/bin etc.); Claude CLI npm-global'de, PATH'e ekle.
+export NPM_GLOBAL="$HOME/.npm-global"
+export PATH="$NPM_GLOBAL/bin:$PATH"
+export CLAUDE_WSL_BIN="$NPM_GLOBAL/bin/claude"
+
+# Bot subprocess spawn ettiğinde peer network'e otomatik subscribe olsun
+[ -f "$HOME/.claude-fn.sh" ] && . "$HOME/.claude-fn.sh"
+
 LOG_FILE="/mnt/c/dev/claude-telegram-bot/data/bot.log"
 BOT_DIR="/mnt/c/dev/claude-telegram-bot"
 VENV="$BOT_DIR/.venv/bin/python3"
