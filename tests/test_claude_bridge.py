@@ -163,26 +163,32 @@ class TestCostTracker:
 
 
 class TestClaudeFacade:
-    def _make_facade(self, tmp_path, max_cost=5.0):
-        runner = MagicMock(spec=ClaudeSDKRunner)
-        runner.run = AsyncMock(
-            return_value=ClaudeResponse(
-                content="Hello from Claude",
-                session_id="sess-123",
-                cost=0.01,
-                num_turns=1,
+    def _make_facade(self, tmp_path, max_cost=5.0, runner=None):
+        if runner is None:
+            runner = MagicMock(spec=ClaudeSDKRunner)
+            runner.run = AsyncMock(
+                return_value=ClaudeResponse(
+                    content="Hello from Claude",
+                    session_id="sess-123",
+                    cost=0.01,
+                    num_turns=1,
+                )
             )
-        )
         with patch("src.claude.session._SANDBOX_BASE", tmp_path / "sandbox"):
             session_mgr = SessionManager()
         cost_tracker = CostTracker()
         sanitizer = CredentialSanitizer()
+        # Non-admin user with no per-user override → falls back to default_user_limit.
+        user_repo = MagicMock()
+        user_repo.get = AsyncMock(return_value=None)
         facade = ClaudeFacade(
             runner=runner,
             session_mgr=session_mgr,
             cost_tracker=cost_tracker,
             sanitizer=sanitizer,
-            max_cost_per_user=max_cost,
+            admin_id=999,
+            user_repo=user_repo,
+            default_user_limit=max_cost,
         )
         return facade, runner
 
@@ -211,14 +217,7 @@ class TestClaudeFacade:
     async def test_timeout_propagates(self, tmp_path):
         runner = MagicMock(spec=ClaudeSDKRunner)
         runner.run = AsyncMock(side_effect=ClaudeTimeoutError("timed out"))
-        with patch("src.claude.session._SANDBOX_BASE", tmp_path / "sandbox"):
-            session_mgr = SessionManager()
-        facade = ClaudeFacade(
-            runner=runner,
-            session_mgr=session_mgr,
-            cost_tracker=CostTracker(),
-            sanitizer=CredentialSanitizer(),
-        )
+        facade, _ = self._make_facade(tmp_path, runner=runner)
         with pytest.raises(ClaudeTimeoutError):
             with patch("src.claude.session._SANDBOX_BASE", tmp_path / "sandbox"):
                 await facade.execute(user_id=1, prompt="test")
@@ -231,14 +230,7 @@ class TestClaudeFacade:
                 session_id="s1",
             )
         )
-        with patch("src.claude.session._SANDBOX_BASE", tmp_path / "sandbox"):
-            session_mgr = SessionManager()
-        facade = ClaudeFacade(
-            runner=runner,
-            session_mgr=session_mgr,
-            cost_tracker=CostTracker(),
-            sanitizer=CredentialSanitizer(),
-        )
+        facade, _ = self._make_facade(tmp_path, runner=runner)
         with patch("src.claude.session._SANDBOX_BASE", tmp_path / "sandbox"):
             response = await facade.execute(user_id=1, prompt="show key")
         assert "AAAAAAAAAAAAAAAAAAAAAAAAA" not in response.content

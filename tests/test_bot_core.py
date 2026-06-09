@@ -11,7 +11,7 @@ from src.bot.utils.constants import (
     BOT_VERSION,
     MESSAGE_CHUNK_SIZE,
     MSG_AUTH_REQUIRED,
-    MSG_RATE_LIMITED,
+    msg_rate_limited,
 )
 from src.bot.utils.formatting import (
     escape_html,
@@ -93,7 +93,7 @@ class TestConstants:
         )
 
     def test_rate_limited_template(self):
-        msg = MSG_RATE_LIMITED.format(wait=30)
+        msg = msg_rate_limited(30)
         assert "30" in msg
 
     def test_message_chunk_size(self):
@@ -125,6 +125,7 @@ class TestAuthMiddleware:
         handler = AsyncMock()
         update = MagicMock()
         update.effective_user.id = 9999
+        update.effective_message.text = "/help"
         update.effective_message.reply_text = AsyncMock()
 
         access_mgr = MagicMock()

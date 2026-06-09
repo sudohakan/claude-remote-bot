@@ -131,9 +131,7 @@ async def handle_media(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
     claude = ctx.bot_data.get("claude_facade")
     if claude is None:
-        await message.reply_text(
-            M.msg_unavailable("Claude bridge"), parse_mode="HTML"
-        )
+        await message.reply_text(M.msg_unavailable("Claude bridge"), parse_mode="HTML")
         return
 
     access = ctx.bot_data.get("access_manager")
@@ -158,10 +156,10 @@ async def handle_media(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         tg_file = await media.get_file()
         await tg_file.download_to_drive(str(file_path))
     except Exception as exc:
-        logger.error("Media download failed", user_id=user.id, kind=kind, error=str(exc))
-        await message.reply_text(
-            M.msg_error("Medya indirilemedi."), parse_mode="HTML"
+        logger.error(
+            "Media download failed", user_id=user.id, kind=kind, error=str(exc)
         )
+        await message.reply_text(M.msg_error("Medya indirilemedi."), parse_mode="HTML")
         return
 
     caption = (message.caption or "").strip()

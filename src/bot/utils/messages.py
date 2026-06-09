@@ -74,7 +74,9 @@ def kv(label: str, value: str, *, value_is_code: bool = False) -> str:
     return f"<b>{escape(label)}:</b> {val}"
 
 
-def kv_block(rows: Iterable[Tuple[str, str]], *, code_keys: Optional[set] = None) -> str:
+def kv_block(
+    rows: Iterable[Tuple[str, str]], *, code_keys: Optional[set] = None
+) -> str:
     """Stack of key-value rows. Pass `code_keys` to wrap select values in <code>."""
     code_keys = code_keys or set()
     return "\n".join(kv(k, v, value_is_code=(k in code_keys)) for k, v in rows)

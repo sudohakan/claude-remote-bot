@@ -60,9 +60,7 @@ async def handle_document(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> Non
     # Size guard — refuse oversized files before attempting download.
     if document.file_size and document.file_size > _MAX_FILE_BYTES:
         await message.reply_text(
-            M.msg_error(
-                "Dosya çok büyük (50 MB üzeri). Daha küçük bir dosya gönder."
-            ),
+            M.msg_error("Dosya çok büyük (50 MB üzeri). Daha küçük bir dosya gönder."),
             parse_mode="HTML",
         )
         return
@@ -79,9 +77,7 @@ async def handle_document(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> Non
 
     claude = ctx.bot_data.get("claude_facade")
     if claude is None:
-        await message.reply_text(
-            M.msg_unavailable("Claude bridge"), parse_mode="HTML"
-        )
+        await message.reply_text(M.msg_unavailable("Claude bridge"), parse_mode="HTML")
         return
 
     access = ctx.bot_data.get("access_manager")
@@ -107,15 +103,11 @@ async def handle_document(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> Non
         await tg_file.download_to_drive(str(file_path))
     except Exception as exc:
         logger.error("Document download failed", user_id=user.id, error=str(exc))
-        await message.reply_text(
-            M.msg_error("Dosya indirilemedi."), parse_mode="HTML"
-        )
+        await message.reply_text(M.msg_error("Dosya indirilemedi."), parse_mode="HTML")
         return
 
     caption = (message.caption or "").strip()
-    instruction = (
-        caption if caption else "Bu dosyayı incele ve içeriğini özetle."
-    )
+    instruction = caption if caption else "Bu dosyayı incele ve içeriğini özetle."
     prompt = (
         f"{instruction}\n\n"
         f"[Kullanıcı bir dosya gönderdi: {document.file_name or fname}. "

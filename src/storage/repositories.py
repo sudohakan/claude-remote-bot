@@ -127,9 +127,7 @@ class UserRepository:
             )
             await conn.commit()
 
-    async def set_cost_limit(
-        self, user_id: int, limit: Optional[float]
-    ) -> None:
+    async def set_cost_limit(self, user_id: int, limit: Optional[float]) -> None:
         """Set per-user daily cost cap (USD).
 
         None  → fall back to the global default in Settings.

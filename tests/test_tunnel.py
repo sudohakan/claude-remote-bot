@@ -252,7 +252,7 @@ class TestTunnelNotifier:
 
         notifier._send.assert_called_once()
         text = notifier._send.call_args[0][0]
-        assert "UP" in text
+        assert "up" in text.lower()
 
     @pytest.mark.asyncio
     async def test_notify_on_down(self, notifier, mock_bot):
@@ -265,7 +265,7 @@ class TestTunnelNotifier:
 
         notifier._send.assert_called_once()
         text = notifier._send.call_args[0][0]
-        assert "DOWN" in text
+        assert "down" in text.lower()
 
     @pytest.mark.asyncio
     async def test_dedup_suppresses_repeated_notifications(self, notifier, mock_bot):
@@ -293,7 +293,7 @@ class TestTunnelNotifier:
 
         notifier._send.assert_called_once()
         text = notifier._send.call_args[0][0]
-        assert "retries exhausted" in text.lower()
+        assert "reconnect exhausted" in text.lower()
 
     @pytest.mark.asyncio
     async def test_retry_exhausted_dedup(self, notifier, mock_bot):

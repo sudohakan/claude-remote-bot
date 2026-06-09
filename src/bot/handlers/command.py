@@ -374,9 +374,7 @@ async def cmd_history(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
     storage = _storage(ctx)
     if storage is None:
-        await update.message.reply_text(
-            M.msg_unavailable("Storage"), parse_mode="HTML"
-        )
+        await update.message.reply_text(M.msg_unavailable("Storage"), parse_mode="HTML")
         return
 
     entries = await storage.commands.recent_for_user(user.id, limit=10)
@@ -499,9 +497,7 @@ async def cmd_users(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         return
 
     if storage is None:
-        await update.message.reply_text(
-            M.msg_unavailable("Storage"), parse_mode="HTML"
-        )
+        await update.message.reply_text(M.msg_unavailable("Storage"), parse_mode="HTML")
         return
 
     users = await storage.users.list_active()
@@ -572,8 +568,9 @@ async def cmd_promote(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text(
             M.compose(
                 M.header(M.ICON_ADMIN, "User promoted"),
-                M.kv("User", str(target_id), value_is_code=True) + "\n" +
-                M.kv("Role", "admin"),
+                M.kv("User", str(target_id), value_is_code=True)
+                + "\n"
+                + M.kv("Role", "admin"),
             ),
             parse_mode="HTML",
         )
@@ -635,8 +632,9 @@ async def cmd_demote(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text(
             M.compose(
                 M.header(M.ICON_SUCCESS, "Role updated"),
-                M.kv("User", str(target_id), value_is_code=True) + "\n" +
-                M.kv("Role", role),
+                M.kv("User", str(target_id), value_is_code=True)
+                + "\n"
+                + M.kv("Role", role),
             ),
             parse_mode="HTML",
         )
@@ -681,9 +679,7 @@ async def cmd_revoke(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     token = args[0].strip()
     if access:
         await access.revoke_invite(token)
-        await update.message.reply_text(
-            M.msg_invite_revoked(token), parse_mode="HTML"
-        )
+        await update.message.reply_text(M.msg_invite_revoked(token), parse_mode="HTML")
 
 
 # ── Admin: /stats ─────────────────────────────────────────────────────────────
@@ -1027,9 +1023,13 @@ for r in results:
         pass
 
     await update.message.reply_text(
-        "\n".join(lines) if lines else M.compose(
-            M.header(M.ICON_INFO, "Remote control"),
-            "No active sessions.",
+        (
+            "\n".join(lines)
+            if lines
+            else M.compose(
+                M.header(M.ICON_INFO, "Remote control"),
+                "No active sessions.",
+            )
         ),
         parse_mode="HTML",
         disable_web_page_preview=True,
@@ -1039,9 +1039,7 @@ for r in results:
 # ── Admin: /limit ────────────────────────────────────────────────────────────
 
 
-def _fmt_limit_value(
-    per_user: float | None, default_limit: float | None
-) -> str:
+def _fmt_limit_value(per_user: float | None, default_limit: float | None) -> str:
     """Render a user's effective daily cost cap for display."""
     if per_user is None:
         if default_limit is None or default_limit < 0:
@@ -1077,9 +1075,7 @@ async def cmd_limit(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         return
 
     if storage is None:
-        await update.message.reply_text(
-            M.msg_unavailable("Storage"), parse_mode="HTML"
-        )
+        await update.message.reply_text(M.msg_unavailable("Storage"), parse_mode="HTML")
         return
 
     default_limit = None
@@ -1112,9 +1108,7 @@ async def cmd_limit(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         body_lines = []
         for u in users[:30]:
             name = f"@{u.username}" if u.username else f"id:{u.user_id}"
-            today = (
-                claude._costs.today_cost(u.user_id) if claude is not None else 0.0
-            )
+            today = claude._costs.today_cost(u.user_id) if claude is not None else 0.0
             if u.user_id == admin_id or u.role == "admin":
                 cap_str = "unlimited (admin)"
             else:
@@ -1248,7 +1242,9 @@ async def cmd_epic(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     script = "/home/hakan/.claude/skills/epic-free-game-claim/claim.py"
     try:
         proc = await _asyncio.create_subprocess_exec(
-            py, script, "--notify-only",
+            py,
+            script,
+            "--notify-only",
             stdout=_asyncio.subprocess.PIPE,
             stderr=_asyncio.subprocess.STDOUT,
         )

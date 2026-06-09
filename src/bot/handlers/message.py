@@ -58,9 +58,7 @@ async def handle_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None
 
     claude = ctx.bot_data.get("claude_facade")
     if claude is None:
-        await message.reply_text(
-            M.msg_unavailable("Claude bridge"), parse_mode="HTML"
-        )
+        await message.reply_text(M.msg_unavailable("Claude bridge"), parse_mode="HTML")
         return
 
     access = ctx.bot_data.get("access_manager")

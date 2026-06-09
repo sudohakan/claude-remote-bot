@@ -252,6 +252,7 @@ class ClaudeSDKRunner:
         raw = stdout.decode(errors="replace").strip()
         try:
             import json as _json
+
             payload = _json.loads(raw)
             content = (payload.get("result") or "").strip()
             real_sid = payload.get("session_id") or session_id or ""

@@ -54,9 +54,7 @@ async def handle_photo(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
     claude = ctx.bot_data.get("claude_facade")
     if claude is None:
-        await message.reply_text(
-            M.msg_unavailable("Claude bridge"), parse_mode="HTML"
-        )
+        await message.reply_text(M.msg_unavailable("Claude bridge"), parse_mode="HTML")
         return
 
     access = ctx.bot_data.get("access_manager")
@@ -81,9 +79,7 @@ async def handle_photo(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         await tg_file.download_to_drive(str(img_path))
     except Exception as exc:
         logger.error("Photo download failed", user_id=user.id, error=str(exc))
-        await message.reply_text(
-            M.msg_error("Görsel indirilemedi."), parse_mode="HTML"
-        )
+        await message.reply_text(M.msg_error("Görsel indirilemedi."), parse_mode="HTML")
         return
 
     caption = (message.caption or "").strip()

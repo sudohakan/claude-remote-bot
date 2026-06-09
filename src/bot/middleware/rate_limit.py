@@ -29,9 +29,9 @@ async def rate_limit_middleware(
     if not allowed:
         message = getattr(update, "effective_message", None)
         if message:
-            from src.bot.utils.constants import MSG_RATE_LIMITED
+            from src.bot.utils.constants import msg_rate_limited
 
-            await message.reply_text(MSG_RATE_LIMITED.format(wait=wait))
+            await message.reply_text(msg_rate_limited(wait), parse_mode="HTML")
         logger.info("Rate limit enforced", user_id=user_id, wait=wait)
         return  # drop update
 
