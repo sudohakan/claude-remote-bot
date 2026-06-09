@@ -26,8 +26,13 @@ async def auth_middleware(handler: Callable, update: Any, data: Dict[str, Any]) 
         return
 
     if not await access_mgr.is_authorised(user_id):
-        logger.info("Unauthorised access attempt", user_id=user_id)
+        # Allow /start so new users can redeem an invite token.
         message = getattr(update, "effective_message", None)
+        text = (getattr(message, "text", "") or "").strip()
+        if text.startswith("/start"):
+            return await handler(update, data)
+
+        logger.info("Unauthorised access attempt", user_id=user_id)
         if message:
             from src.bot.utils.constants import MSG_AUTH_REQUIRED
 

@@ -90,6 +90,13 @@ _SCHEMA_V2 = """
 PRAGMA journal_mode=WAL;
 """
 
+_SCHEMA_V3 = """
+-- Per-user daily cost cap (USD). NULL = use default from settings.
+-- Negative value = unlimited. Admin (settings.admin_telegram_id or role='admin')
+-- is bypassed in ClaudeFacade regardless of this column.
+ALTER TABLE users ADD COLUMN daily_cost_limit REAL DEFAULT NULL;
+"""
+
 
 class DatabaseManager:
     """Manage SQLite connections with a simple pool."""
@@ -203,4 +210,5 @@ class DatabaseManager:
         return [
             (1, _SCHEMA_V1),
             (2, _SCHEMA_V2),
+            (3, _SCHEMA_V3),
         ]

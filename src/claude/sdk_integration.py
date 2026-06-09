@@ -22,6 +22,11 @@ logger = structlog.get_logger(__name__)
 _CONCURRENT_LIMIT = 3
 _semaphore: asyncio.Semaphore = asyncio.Semaphore(_CONCURRENT_LIMIT)
 
+# Isolated HOME for non-admin Claude subprocess. Keeps the host's
+# ~/.claude/ hooks, plugins, MCP servers, and Bitwarden vault injection
+# out of guest sessions. Admin (full_access=True) keeps the real HOME.
+_SANDBOX_HOME = "/home/hakan/.claude-bot-sandbox"
+
 
 @dataclass
 class ClaudeResponse:
@@ -106,26 +111,21 @@ class ClaudeSDKRunner:
         continue_session: bool,
         full_access: bool = False,
     ) -> ClaudeResponse:
-        """Try SDK, fall back to CLI."""
-        if full_access:
-            # Full access mode always uses CLI with --dangerously-skip-permissions
-            # so MCP servers, plugins, hooks, and slash commands all work
-            return await self._run_cli(
-                prompt, working_dir, session_id, full_access=True
-            )
+        """Try SDK, fall back to CLI.
 
-        try:
-            return await self._run_sdk(
-                prompt, working_dir, session_id, continue_session
-            )
-        except ImportError:
-            logger.info("claude-agent-sdk not available, using CLI fallback")
-            return await self._run_cli(prompt, working_dir, session_id)
-        except Exception as exc:
-            if "auth" in str(exc).lower() or "api_key" in str(exc).lower():
-                logger.warning("SDK auth error, trying CLI fallback", error=str(exc))
-                return await self._run_cli(prompt, working_dir, session_id)
-            raise
+        full_access propagates through every path so admin users keep their
+        permission bypass on the ImportError/auth fallback as well — otherwise
+        an SDK install hiccup silently demotes admin to the gated default mode.
+        """
+        # Both admin (full_access) and guest paths route through _run_cli.
+        # Admin uses --dangerously-skip-permissions + host HOME so MCP servers,
+        # plugins, hooks, slash commands all work. Guest uses sandbox HOME
+        # (no hooks/MCP/secrets). The SDK stream-json path is bypassed because
+        # the bundled CLI 2.1.88 returns exit 1 under the sandboxed env, and
+        # the simple JSON `--output-format json -p` mode works reliably in both.
+        return await self._run_cli(
+            prompt, working_dir, session_id, full_access=full_access
+        )
 
     async def _run_sdk(
         self,
@@ -133,6 +133,7 @@ class ClaudeSDKRunner:
         working_dir: Path,
         session_id: Optional[str],
         continue_session: bool,
+        full_access: bool = False,
     ) -> ClaudeResponse:
         """Execute via claude-agent-sdk."""
         from claude_agent_sdk import (
@@ -142,10 +143,16 @@ class ClaudeSDKRunner:
             ResultMessage,
         )
 
+        sandbox_env = {} if full_access else {"HOME": _SANDBOX_HOME}
         options = ClaudeAgentOptions(
             max_turns=self._max_turns,
             model=self._model or None,
             cwd=str(working_dir),
+            # Admin users bypass permission prompts so writes to ~/.claude/,
+            # MCP tool calls, and slash commands are not gated. The CLI fallback
+            # uses --dangerously-skip-permissions for the same effect.
+            permission_mode="bypassPermissions" if full_access else None,
+            env=sandbox_env,
         )
         if session_id and continue_session:
             options.resume = session_id
@@ -191,7 +198,10 @@ class ClaudeSDKRunner:
                          so MCP servers, plugins, and slash commands work.
                          Only enable for admin users.
         """
-        cmd: List[str] = [self._cli, "--output-format", "text"]
+        # json output carries session_id + cost so the facade can adopt the
+        # real Claude session_id for the next --resume. text mode would drop
+        # it and every turn would silently start a fresh conversation.
+        cmd: List[str] = [self._cli, "--output-format", "json"]
 
         if full_access:
             cmd += ["--dangerously-skip-permissions"]
@@ -204,12 +214,19 @@ class ClaudeSDKRunner:
 
         cmd += ["--", prompt]
 
+        # Isolate guest subprocess from host ~/.claude/ (hooks, MCP, secrets).
+        # Admin keeps host HOME so their session matches a real Claude Code env.
+        subprocess_env = os.environ.copy()
+        if not full_access:
+            subprocess_env["HOME"] = _SANDBOX_HOME
+
         try:
             proc = await asyncio.create_subprocess_exec(
                 *cmd,
                 cwd=str(working_dir),
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
+                env=subprocess_env,
             )
             stdout, stderr = await proc.communicate()
         except FileNotFoundError:
@@ -232,7 +249,26 @@ class ClaudeSDKRunner:
                 )
             raise ClaudeProcessError(f"Claude CLI error (rc={proc.returncode}): {err}")
 
+        raw = stdout.decode(errors="replace").strip()
+        try:
+            import json as _json
+            payload = _json.loads(raw)
+            content = (payload.get("result") or "").strip()
+            real_sid = payload.get("session_id") or session_id or ""
+            cost = float(payload.get("total_cost_usd") or 0.0)
+            turns = int(payload.get("num_turns") or 1)
+        except (ValueError, TypeError):
+            # Defensive: if CLI changes output shape, fall back to raw text
+            # so the user still gets a reply, even though session_id is lost
+            # for that turn.
+            content = raw
+            real_sid = session_id or ""
+            cost = 0.0
+            turns = 1
+
         return ClaudeResponse(
-            content=stdout.decode(errors="replace").strip(),
-            session_id=session_id or "",
+            content=content,
+            session_id=real_sid,
+            cost=cost,
+            num_turns=turns,
         )

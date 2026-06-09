@@ -18,6 +18,48 @@ def escape_html(text: str) -> str:
     return html.escape(text)
 
 
+_CODE_BLOCK_RE = re.compile(r"```([\w+-]*)\n?(.*?)```", re.DOTALL)
+_INLINE_CODE_RE = re.compile(r"`([^`\n]+)`")
+_BOLD_RE = re.compile(r"\*\*([^*\n]+)\*\*")
+_ITALIC_RE = re.compile(r"(?<![*\w])\*([^*\n]+)\*(?!\*)")
+
+
+def claude_to_telegram_html(text: str) -> str:
+    """Render Claude's Markdown-ish output as Telegram-safe HTML.
+
+    Escapes <, >, & first so literal angle brackets in Claude output
+    (e.g. <uuid>, <session_id>) can't be misread as HTML tags.  Then
+    re-applies the small subset of tags Telegram actually supports:
+    <pre><code>, <code>, <b>, <i>.
+    """
+    placeholders: List[str] = []
+
+    def _stash(rendered: str) -> str:
+        placeholders.append(rendered)
+        return f"\x00TG_HTML_{len(placeholders) - 1}\x00"
+
+    def _code_block(match: "re.Match[str]") -> str:
+        lang = match.group(1).strip()
+        body = html.escape(match.group(2))
+        if lang:
+            return _stash(f'<pre><code class="language-{lang}">{body}</code></pre>')
+        return _stash(f"<pre><code>{body}</code></pre>")
+
+    def _inline_code(match: "re.Match[str]") -> str:
+        return _stash(f"<code>{html.escape(match.group(1))}</code>")
+
+    work = _CODE_BLOCK_RE.sub(_code_block, text)
+    work = _INLINE_CODE_RE.sub(_inline_code, work)
+    work = html.escape(work)
+    work = _BOLD_RE.sub(r"<b>\1</b>", work)
+    work = _ITALIC_RE.sub(r"<i>\1</i>", work)
+
+    def _restore(match: "re.Match[str]") -> str:
+        return placeholders[int(match.group(1))]
+
+    return re.sub(r"\x00TG_HTML_(\d+)\x00", _restore, work)
+
+
 def split_message(text: str, chunk_size: int = MESSAGE_CHUNK_SIZE) -> List[str]:
     """Split `text` into chunks of at most `chunk_size` characters.
 

@@ -23,24 +23,16 @@ ROLE_LABELS = {
     "viewer": "Viewer (read-only)",
 }
 
-# Welcome message shown to new users after /start with no token
-MSG_WELCOME_UNKNOWN = (
-    "Hello! This bot requires an invite token to access.\n\n"
-    "Use <code>/start YOUR_TOKEN</code> to authenticate."
-)
+# User-visible message templates render through src.bot.utils.messages so
+# every reply shares the same visual hierarchy (icon + bold title + sections).
+# Always paired with parse_mode="HTML".
+from src.bot.utils import messages as _M
 
-# Welcome message shown after successful invite redemption
-MSG_WELCOME_NEW_USER = (
-    "Welcome! Your account has been created.\n\n" "Use /help to see available commands."
-)
+MSG_WELCOME_UNKNOWN = _M.msg_welcome_unknown()
+MSG_WELCOME_NEW_USER = _M.msg_welcome_new_user()
+MSG_AUTH_REQUIRED = _M.msg_auth_required()
+MSG_ERROR = _M.msg_error()
 
-# Auth rejection message
-MSG_AUTH_REQUIRED = (
-    "Access denied. You need an invite token.\n" "Contact the admin for an invite."
-)
 
-# Rate limit message template
-MSG_RATE_LIMITED = "Rate limited — please wait {wait:.0f}s before retrying."
-
-# Generic error
-MSG_ERROR = "An error occurred. Please try again."
+def msg_rate_limited(wait: float, *, context: str = "Request") -> str:
+    return _M.msg_rate_limited(wait, context=context)

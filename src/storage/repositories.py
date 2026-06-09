@@ -127,6 +127,22 @@ class UserRepository:
             )
             await conn.commit()
 
+    async def set_cost_limit(
+        self, user_id: int, limit: Optional[float]
+    ) -> None:
+        """Set per-user daily cost cap (USD).
+
+        None  → fall back to the global default in Settings.
+        < 0   → unlimited (admin treatment for a non-admin user).
+        >= 0  → hard daily cap in USD.
+        """
+        async with self._db.get_connection() as conn:
+            await conn.execute(
+                "UPDATE users SET daily_cost_limit = ? WHERE user_id = ?",
+                (limit, user_id),
+            )
+            await conn.commit()
+
     async def list_active(self) -> List[UserModel]:
         async with self._db.get_connection() as conn:
             cur = await conn.execute(

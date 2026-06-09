@@ -8,6 +8,8 @@ from typing import Optional
 
 import structlog
 
+from src.storage.repositories import UserRepository
+
 from .exceptions import ClaudeError
 from .monitor import CostTracker
 from .sanitizer import CredentialSanitizer
@@ -26,13 +28,30 @@ class ClaudeFacade:
         session_mgr: SessionManager,
         cost_tracker: CostTracker,
         sanitizer: CredentialSanitizer,
-        max_cost_per_user: float = 5.0,
+        admin_id: int,
+        user_repo: UserRepository,
+        default_user_limit: float = 5.0,
     ) -> None:
         self._runner = runner
         self._sessions = session_mgr
         self._costs = cost_tracker
         self._sanitizer = sanitizer
-        self._max_cost = max_cost_per_user
+        self._admin_id = admin_id
+        self._user_repo = user_repo
+        self._default_limit = default_user_limit
+
+    async def _resolve_limit(self, user_id: int) -> Optional[float]:
+        """Return the daily cost cap (USD) for a non-admin user.
+
+        - None  → no cap applies (user effectively unlimited; admin treatment).
+        - >= 0  → hard daily cap.
+        """
+        row = await self._user_repo.get(user_id)
+        per_user = row.daily_cost_limit if row else None
+        effective = per_user if per_user is not None else self._default_limit
+        if effective is None or effective < 0:
+            return None
+        return effective
 
     async def execute(
         self,
@@ -48,14 +67,21 @@ class ClaudeFacade:
         Raises ClaudeError subclasses on failure.
         Sanitizes credential patterns from the response.
         """
-        # Cost guard
-        today_spend = self._costs.today_cost(user_id)
-        if today_spend >= self._max_cost:
-            from .exceptions import ClaudeAuthError
+        # Cost guard — admin (telegram admin_id or DB role='admin') is exempt.
+        # CLI/subscription mode tracks fiat-equivalent cost only for visibility.
+        is_admin = user_id == self._admin_id or role == "admin"
+        if not is_admin:
+            limit = await self._resolve_limit(user_id)
+            if limit is not None:
+                today_spend = self._costs.today_cost(user_id)
+                if today_spend >= limit:
+                    from .exceptions import ClaudeAuthError
 
-            raise ClaudeAuthError(
-                f"Daily cost limit reached (${today_spend:.2f}/${self._max_cost:.2f})"
-            )
+                    raise ClaudeAuthError(
+                        f"Günlük kullanım limiti aşıldı "
+                        f"(${today_spend:.2f}/${limit:.2f}). "
+                        f"Admin'e başvur."
+                    )
 
         # Session management
         if new_session:
@@ -77,6 +103,12 @@ class ClaudeFacade:
             from .exceptions import ClaudeProcessError
 
             raise ClaudeProcessError(f"Unexpected error: {exc}") from exc
+
+        # Adopt Claude's real session_id so the next turn can --resume it.
+        # Without this, the in-memory UUID stays random and every message
+        # silently starts a fresh Claude conversation (context-loss bug).
+        if response.session_id and response.session_id != session.session_id:
+            session.session_id = response.session_id
 
         # Update session stats
         session.touch(cost_delta=response.cost, turns_delta=response.num_turns)

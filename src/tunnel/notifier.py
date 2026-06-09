@@ -74,31 +74,23 @@ class TunnelNotifier:
             return
 
         self._retry_exhausted_sent = now
-        attempts = getattr(event, "attempts", "?")
-        msg = (
-            f"<b>Tunnel: retries exhausted</b>\n\n"
-            f"ngrok failed to restart after {attempts} attempts.\n"
-            "Manual intervention required."
-        )
-        await self._send(msg)
+        from src.bot.utils import messages as M
+
+        attempts = getattr(event, "attempts", 0)
+        await self._send(M.msg_tunnel_retries_exhausted(attempts))
 
     # ── Formatting ────────────────────────────────────────────────────────────
 
     def _format_state_change(self, event: TunnelStateChangeEvent) -> str:
-        if event.new_state == "up":
-            ssh_cmd = ""
-            if event.ssh_host and event.ssh_port:
-                ssh_cmd = f"\n\nConnect: <code>ssh -p {event.ssh_port} user@{event.ssh_host}</code>"
-            return (
-                f"<b>Tunnel: UP</b>{ssh_cmd}\n\n"
-                f"URL: <code>{event.tunnel_url or 'unknown'}</code>"
+        from src.bot.utils import messages as M
+
+        if event.new_state == "up" and event.ssh_host and event.ssh_port:
+            return M.msg_tunnel_up(
+                url=event.tunnel_url or "unknown",
+                host=event.ssh_host,
+                port=event.ssh_port,
             )
-        else:
-            return (
-                f"<b>Tunnel: DOWN</b>\n\n"
-                f"Previous state: {event.previous_state}\n"
-                "Attempting to restart..."
-            )
+        return M.msg_tunnel_down(prev_url=event.tunnel_url)
 
     # ── Delivery ──────────────────────────────────────────────────────────────
 

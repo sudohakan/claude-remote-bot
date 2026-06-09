@@ -108,6 +108,14 @@ class TunnelManager:
     # ── ngrok process ─────────────────────────────────────────────────────────
 
     async def _spawn_ngrok(self) -> None:
+        # If an external ngrok (PM2-managed) is already serving the local API,
+        # skip spawning — bot becomes a passive notifier and survives ngrok
+        # process restarts without affecting the tunnel.
+        if self._is_external_ngrok_alive():
+            logger.info("External ngrok detected on :4040 — skip spawn")
+            self._process = None
+            return
+
         try:
             cmd = [
                 "ngrok",
@@ -129,6 +137,16 @@ class TunnelManager:
         except FileNotFoundError:
             logger.warning("ngrok binary not found — tunnel will not start")
             await self._set_state("error")
+
+    def _is_external_ngrok_alive(self) -> bool:
+        import urllib.error
+        import urllib.request
+
+        try:
+            with urllib.request.urlopen(_NGROK_API, timeout=2) as resp:
+                return resp.status == 200
+        except (urllib.error.URLError, TimeoutError, OSError):
+            return False
 
     def _terminate_ngrok(self) -> None:
         if self._process and self._process.poll() is None:

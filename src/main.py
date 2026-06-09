@@ -72,12 +72,21 @@ async def _main() -> None:
     cost_tracker = CostTracker()
     sanitizer = CredentialSanitizer()
 
+    # Default daily cap for non-admin users without per-user override.
+    # NULL in settings → fall back to the legacy claude_max_cost_per_user.
+    _default_user_limit = (
+        settings.claude_default_user_cost_limit
+        if settings.claude_default_user_cost_limit is not None
+        else settings.claude_max_cost_per_user
+    )
     claude_facade = ClaudeFacade(
         runner=runner,
         session_mgr=session_mgr,
         cost_tracker=cost_tracker,
         sanitizer=sanitizer,
-        max_cost_per_user=settings.claude_max_cost_per_user,
+        admin_id=settings.admin_telegram_id,
+        user_repo=storage.users,
+        default_user_limit=_default_user_limit,
     )
 
     # ── Event bus ─────────────────────────────────────────────────────────────

@@ -48,3 +48,6 @@ Thumbs.db
 
 # Knowledge graph (generated artifact)
 graphify-out/
+
+# editor/auto backup artifacts
+*.bak-*

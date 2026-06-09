@@ -1,26 +1,39 @@
-"""Text message handler — routes to Claude bridge.
+"""Document message handler — downloads an uploaded file, routes to Claude.
 
-In agentic mode every non-command text message becomes a Claude prompt.
-Rate-limits Claude requests separately from general commands.
-Sends periodic typing indicators and a status message while Claude works.
+Telegram documents (any non-photo file: code, text, PDF, archives, ...) carry
+no ``.text``, so the text handler skips them. This handler downloads the file
+to a temp directory and asks Claude to inspect it by absolute path (Claude
+opens it with its own Read tool), reusing the exact same ``claude.execute()``
+bridge as text and photo messages. The Claude bridge is intentionally left
+untouched.
+
+Mirrors ``handlers/photo.py`` deliberately so the two stay easy to compare.
 """
 
 import asyncio
+import re
+from pathlib import Path
 
 import structlog
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from src.bot.utils.formatting import (
-    claude_to_telegram_html,
-    escape_html,
-    split_message,
-)
+from src.bot.utils.formatting import claude_to_telegram_html, split_message
 from src.claude.exceptions import ClaudeError, ClaudeTimeoutError
 
 logger = structlog.get_logger(__name__)
 
 _TYPING_INTERVAL_SECONDS = 4
+_FILE_DIR = Path("/tmp/telegram-files")
+# 50 MB — Telegram bot API download ceiling for most files
+_MAX_FILE_BYTES = 50 * 1024 * 1024
+
+
+def _safe_name(name: str) -> str:
+    """Strip path separators and dangerous chars from a user-supplied filename."""
+    base = Path(name).name  # drop any directory parts
+    cleaned = re.sub(r"[^A-Za-z0-9._-]", "_", base).strip("._")
+    return cleaned or "file"
 
 
 async def _keep_typing(chat_id: int, ctx: ContextTypes.DEFAULT_TYPE) -> None:
@@ -33,20 +46,28 @@ async def _keep_typing(chat_id: int, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         await asyncio.sleep(_TYPING_INTERVAL_SECONDS)
 
 
-async def handle_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
-    """Forward user message to Claude and send the response."""
+async def handle_document(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
+    """Download the document, ask Claude to inspect it, send the response."""
     user = update.effective_user
     message = update.effective_message
-    if user is None or message is None:
-        return
-
-    text = (message.text or "").strip()
-    if not text:
+    if user is None or message is None or message.document is None:
         return
 
     from src.bot.utils import messages as M
 
-    # Claude rate limit (separate from command limit)
+    document = message.document
+
+    # Size guard — refuse oversized files before attempting download.
+    if document.file_size and document.file_size > _MAX_FILE_BYTES:
+        await message.reply_text(
+            M.msg_error(
+                "Dosya çok büyük (50 MB üzeri). Daha küçük bir dosya gönder."
+            ),
+            parse_mode="HTML",
+        )
+        return
+
+    # Claude rate limit (shared with text/photo messages)
     limiter = ctx.bot_data.get("rate_limiter")
     if limiter:
         allowed, wait = await limiter.check("claude", user.id)
@@ -76,14 +97,39 @@ async def handle_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None
 
     chat_id = update.effective_chat.id
 
-    # Send initial status message and start continuous typing indicator
-    status_msg = await message.reply_text("⏳")
+    # Download the file to a temp dir (ext4, Claude-readable). Prefix with the
+    # message id so concurrent uploads of the same filename don't collide.
+    fname = _safe_name(document.file_name or f"file_{message.message_id}")
+    file_path = _FILE_DIR / f"tg_{user.id}_{message.message_id}_{fname}"
+    try:
+        _FILE_DIR.mkdir(parents=True, exist_ok=True)
+        tg_file = await document.get_file()
+        await tg_file.download_to_drive(str(file_path))
+    except Exception as exc:
+        logger.error("Document download failed", user_id=user.id, error=str(exc))
+        await message.reply_text(
+            M.msg_error("Dosya indirilemedi."), parse_mode="HTML"
+        )
+        return
+
+    caption = (message.caption or "").strip()
+    instruction = (
+        caption if caption else "Bu dosyayı incele ve içeriğini özetle."
+    )
+    prompt = (
+        f"{instruction}\n\n"
+        f"[Kullanıcı bir dosya gönderdi: {document.file_name or fname}. "
+        f"Şu dosyayı Read aracıyla aç ve incele: {file_path}]"
+    )
+
+    # Initial status message + continuous typing indicator
+    status_msg = await message.reply_text("📄")
     typing_task = asyncio.create_task(_keep_typing(chat_id, ctx))
 
     try:
         response = await claude.execute(
             user_id=user.id,
-            prompt=text,
+            prompt=prompt,
             access_level=access_level,
             username=user.username,
             role=role,
@@ -92,14 +138,14 @@ async def handle_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None
         await status_msg.edit_text(
             M.compose(
                 M.header(M.ICON_WARNING, "Claude timed out"),
-                f"Try a shorter prompt, or reset with {M.code('/new')}.",
+                f"Daha kısa bir istek dene veya {M.code('/new')} ile sıfırla.",
             ),
             parse_mode="HTML",
         )
         return
     except ClaudeError as exc:
         await status_msg.edit_text(M.msg_error(str(exc)), parse_mode="HTML")
-        logger.error("Claude error", user_id=user.id, error=str(exc))
+        logger.error("Claude error (document)", user_id=user.id, error=str(exc))
         return
     finally:
         typing_task.cancel()
@@ -120,7 +166,7 @@ async def handle_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None
         from src.storage.models import CommandLogModel
 
         await storage.commands.log(
-            CommandLogModel(user_id=user.id, command="<message>", result="ok")
+            CommandLogModel(user_id=user.id, command="<document>", result="ok")
         )
 
     # Send response in chunks if needed

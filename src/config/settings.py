@@ -28,7 +28,21 @@ class Settings(BaseSettings):
     claude_max_turns: int = Field(10, description="Max conversation turns per request")
     claude_timeout_seconds: int = Field(600, description="Claude execution timeout")
     claude_max_cost_per_user: float = Field(
-        5.0, description="Daily cost cap per user (USD)"
+        5.0,
+        description=(
+            "Legacy global daily cost cap (USD). Used as fallback default for "
+            "non-admin users when claude_default_user_cost_limit is unset and "
+            "the user has no per-user override in users.daily_cost_limit. "
+            "Admin (admin_telegram_id or DB role='admin') is always exempt."
+        ),
+    )
+    claude_default_user_cost_limit: Optional[float] = Field(
+        None,
+        description=(
+            "Default daily cost cap (USD) for non-admin users without a "
+            "per-user override. NULL → fall back to claude_max_cost_per_user. "
+            "Negative → unlimited."
+        ),
     )
     claude_max_cost_per_request: float = Field(
         1.0, description="Budget cap per individual request (USD)"

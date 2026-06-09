@@ -39,6 +39,7 @@ class UserModel:
     is_active: bool = True
     total_cost: float = 0.0
     message_count: int = 0
+    daily_cost_limit: Optional[float] = None
 
     @classmethod
     def from_row(cls, row: aiosqlite.Row) -> "UserModel":
