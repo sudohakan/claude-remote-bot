@@ -13,7 +13,6 @@ from telegram.ext import ContextTypes
 
 from src.bot.utils.formatting import (
     claude_to_telegram_html,
-    escape_html,
     split_message,
 )
 from src.claude.exceptions import ClaudeError, ClaudeTimeoutError

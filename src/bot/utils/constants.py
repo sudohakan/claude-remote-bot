@@ -1,5 +1,7 @@
 """Bot-wide constants."""
 
+from src.bot.utils import messages as _M
+
 BOT_VERSION = "0.1.0"
 
 # Telegram hard limits
@@ -26,8 +28,6 @@ ROLE_LABELS = {
 # User-visible message templates render through src.bot.utils.messages so
 # every reply shares the same visual hierarchy (icon + bold title + sections).
 # Always paired with parse_mode="HTML".
-from src.bot.utils import messages as _M
-
 MSG_WELCOME_UNKNOWN = _M.msg_welcome_unknown()
 MSG_WELCOME_NEW_USER = _M.msg_welcome_new_user()
 MSG_AUTH_REQUIRED = _M.msg_auth_required()
