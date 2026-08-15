@@ -38,6 +38,12 @@ async def _main() -> None:
     settings = Settings()
 
     logging.basicConfig(level=settings.log_level)
+    # httpx logs every request line at INFO, and a Telegram API URL carries the
+    # bot token in its path — at INFO the log file accumulates the token in
+    # plain text on every poll. Keep these two at WARNING regardless of
+    # LOG_LEVEL; request-level detail is not worth leaking a credential.
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("httpcore").setLevel(logging.WARNING)
     structlog.configure(
         wrapper_class=structlog.make_filtering_bound_logger(
             logging.getLevelName(settings.log_level)
