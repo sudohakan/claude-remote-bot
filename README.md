@@ -193,7 +193,7 @@ claude-remote-bot/
 │   ├── security/                # Invite auth, rate limiter, path validator, audit log
 │   ├── storage/                 # SQLite (WAL mode) + repository pattern
 │   └── tunnel/                  # ngrok lifecycle manager + admin notifier
-├── tests/                       # 10 test files
+├── tests/                       # test suite
 ├── scripts/
 │   ├── install.sh               # Automated setup
 │   ├── run-bot.sh               # Run script
@@ -257,7 +257,7 @@ All settings loaded from `.env`. Copy `.env.example` to get started.
 | Variable | Default | Description |
 |:---------|:-------:|:------------|
 | `ANTHROPIC_API_KEY` | -- | API key. Falls back to `claude` CLI if unset |
-| `CLAUDE_MODEL` | SDK default | Model override (e.g. `claude-sonnet-4-20250514`) |
+| `CLAUDE_MODEL` | SDK default | Model override (any model id the SDK accepts, e.g. a `sonnet` alias) |
 | `CLAUDE_MAX_TURNS` | `10` | Max agentic turns per request |
 | `CLAUDE_TIMEOUT_SECONDS` | `120` | Per-request timeout |
 | `CLAUDE_MAX_COST_PER_USER` | `5.0` | Monthly cost cap per user (USD) |
@@ -347,7 +347,7 @@ pytest
 
 ## License
 
-[MIT](LICENSE) : 2026 Hakan Topcu
+[MIT](LICENSE) — Copyright 2026 Hakan Topcu
 
 <div align="center">
 
