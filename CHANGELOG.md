@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- Claude replies go through a single sender (`send_claude_reply`): chunked, rendered as Telegram HTML, same chunk re-sent as plain text if Telegram rejects the HTML. All four handlers (text, document, photo, media) use it; a test fails if one bypasses it.
+
+### Fixed
+- Inline-keyboard buttons (`/new`, `/status`, `/help`) no longer crash on callback updates, which carry no `message`.
+- A user whose access was revoked can no longer drive commands through old keyboards.
+- A timed-out `claude` subprocess is killed instead of left running; `--resume` is only passed once Claude has actually started the session.
+
 ---
 
 ## [1.0.0] - 2026-03-22
