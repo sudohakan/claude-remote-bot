@@ -89,6 +89,7 @@ async def handle_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None
         await status_msg.edit_text(
             M.compose(
                 M.header(M.ICON_WARNING, "Claude timed out"),
+                "The run exceeded its time limit and was stopped. "
                 f"Try a shorter prompt, or reset with {M.code('/new')}.",
             ),
             parse_mode="HTML",

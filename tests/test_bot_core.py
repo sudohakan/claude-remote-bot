@@ -255,3 +255,46 @@ class TestRemoteBotErrorHandler:
             error="send failed",
             error_type="RuntimeError",
         )
+
+
+# ── Callback auth ─────────────────────────────────────────────────────────────
+
+
+class TestCallbackAuth:
+    def _update(self, user_id: int, data: str = "show_status"):
+        upd = MagicMock()
+        upd.effective_user.id = user_id
+        upd.callback_query.data = data
+        upd.callback_query.answer = AsyncMock()
+        upd.callback_query.edit_message_text = AsyncMock()
+        return upd
+
+    def _ctx(self, authorised: bool):
+        ctx = MagicMock()
+        mgr = MagicMock()
+        mgr.is_authorised = AsyncMock(return_value=authorised)
+        ctx.bot_data = {"access_manager": mgr}
+        return ctx
+
+    async def test_unauthorised_callback_does_not_dispatch(self):
+        from src.bot.handlers import callback
+
+        with patch("src.bot.handlers.command.cmd_status", new=AsyncMock()) as status:
+            await callback.handle_callback(self._update(999), self._ctx(False))
+            status.assert_not_called()
+
+    async def test_authorised_callback_dispatches(self):
+        from src.bot.handlers import callback
+
+        with patch("src.bot.handlers.command.cmd_status", new=AsyncMock()) as status:
+            await callback.handle_callback(self._update(1), self._ctx(True))
+            status.assert_called_once()
+
+    async def test_missing_access_manager_fails_closed(self):
+        from src.bot.handlers import callback
+
+        ctx = MagicMock()
+        ctx.bot_data = {}
+        with patch("src.bot.handlers.command.cmd_status", new=AsyncMock()) as status:
+            await callback.handle_callback(self._update(1), ctx)
+            status.assert_not_called()

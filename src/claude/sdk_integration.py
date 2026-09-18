@@ -9,6 +9,7 @@ Enforces:
 
 import asyncio
 import os
+import signal
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -62,6 +63,8 @@ class ClaudeSDKRunner:
         self._max_turns = max_turns
         self._timeout = timeout_seconds
         self._cli = cli_path or "claude"
+        # Handle on the in-flight CLI subprocess so a timeout can reap it.
+        self._active_proc: Optional[asyncio.subprocess.Process] = None
 
         if anthropic_api_key:
             os.environ["ANTHROPIC_API_KEY"] = anthropic_api_key
@@ -87,6 +90,7 @@ class ClaudeSDKRunner:
         start = asyncio.get_event_loop().time()
 
         async with _semaphore:
+            self._active_proc = None
             try:
                 response = await asyncio.wait_for(
                     self._execute(
@@ -95,13 +99,63 @@ class ClaudeSDKRunner:
                     timeout=self._timeout,
                 )
             except asyncio.TimeoutError:
-                int((asyncio.get_event_loop().time() - start) * 1000)
+                elapsed_ms = int((asyncio.get_event_loop().time() - start) * 1000)
+                # wait_for only cancels the awaiting coroutine — the spawned
+                # `claude` process survives as an orphan, keeps consuming tokens
+                # and RAM, and its result is discarded. Kill it explicitly.
+                await self._kill_active()
+                logger.warning(
+                    "Claude timed out",
+                    timeout_s=self._timeout,
+                    elapsed_ms=elapsed_ms,
+                    prompt_chars=len(prompt),
+                    session_id=session_id,
+                    working_dir=str(working_dir),
+                )
                 raise ClaudeTimeoutError(
                     f"Claude timed out after {self._timeout}s"
                 ) from None
+            finally:
+                self._active_proc = None
 
         response.duration_ms = int((asyncio.get_event_loop().time() - start) * 1000)
         return response
+
+    async def _kill_active(self) -> None:
+        """Terminate the in-flight CLI subprocess, escalating to SIGKILL.
+
+        Best-effort: a process that already exited raises ProcessLookupError,
+        which is the success case, not an error.
+        """
+        proc = self._active_proc
+        if proc is None or proc.returncode is not None:
+            return
+        # Signal the whole group, not just the CLI: a `claude` run spawns MCP
+        # servers (bun, python, node) as children, and terminating only the
+        # parent leaves those running forever. start_new_session=True at spawn
+        # makes the CLI its own group leader so killpg reaches all of them.
+        try:
+            pgid = os.getpgid(proc.pid)
+        except (ProcessLookupError, PermissionError):
+            pgid = None
+
+        def _signal(sig: int) -> None:
+            if pgid is not None:
+                os.killpg(pgid, sig)
+            else:
+                proc.kill() if sig == signal.SIGKILL else proc.terminate()
+
+        try:
+            _signal(signal.SIGTERM)
+            try:
+                await asyncio.wait_for(proc.wait(), timeout=5)
+            except asyncio.TimeoutError:
+                _signal(signal.SIGKILL)
+                await proc.wait()
+        except ProcessLookupError:
+            pass
+        except Exception as exc:  # pragma: no cover — reaping must not mask timeout
+            logger.warning("Failed to reap Claude subprocess", error=str(exc))
 
     async def _execute(
         self,
@@ -227,7 +281,9 @@ class ClaudeSDKRunner:
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
                 env=subprocess_env,
+                start_new_session=True,
             )
+            self._active_proc = proc
             stdout, stderr = await proc.communicate()
         except FileNotFoundError:
             raise ClaudeProcessError(

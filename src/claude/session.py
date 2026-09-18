@@ -27,6 +27,11 @@ class UserSession:
     session_id: str
     user_id: int
     working_dir: Path
+    # session_id starts life as a locally minted UUID so storage keeps a stable
+    # primary key, but the Claude CLI knows nothing about it. Until a real run
+    # hands back its own id, --resume on that UUID is a guaranteed
+    # "no conversation found" plus a wasted CLI launch on every first message.
+    claude_started: bool = False
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     last_used: datetime = field(default_factory=lambda: datetime.now(UTC))
     total_turns: int = 0

@@ -93,7 +93,7 @@ class ClaudeFacade:
             response = await self._runner.run(
                 prompt=prompt,
                 working_dir=session.working_dir,
-                session_id=session.session_id,
+                session_id=session.session_id if session.claude_started else None,
                 continue_session=not new_session,
                 full_access=(role == "admin"),
             )
@@ -107,8 +107,10 @@ class ClaudeFacade:
         # Adopt Claude's real session_id so the next turn can --resume it.
         # Without this, the in-memory UUID stays random and every message
         # silently starts a fresh Claude conversation (context-loss bug).
-        if response.session_id and response.session_id != session.session_id:
-            session.session_id = response.session_id
+        if response.session_id:
+            if response.session_id != session.session_id:
+                session.session_id = response.session_id
+            session.claude_started = True
 
         # Update session stats
         session.touch(cost_delta=response.cost, turns_delta=response.num_turns)

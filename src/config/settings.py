@@ -134,8 +134,11 @@ class Settings(BaseSettings):
         """Clamp timeout to a sensible range."""
         if v < 30:
             raise ValueError("claude_timeout_seconds must be >= 30")
-        if v > 600:
-            raise ValueError("claude_timeout_seconds must be <= 600")
+        # Ceiling is 1h: a system-wide analysis or a multi-step repair legitimately
+        # runs past ten minutes, and the old 600s cap turned those into a timeout
+        # message even though the run was healthy.
+        if v > 3600:
+            raise ValueError("claude_timeout_seconds must be <= 3600")
         return v
 
     @model_validator(mode="after")
