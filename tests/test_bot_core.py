@@ -290,6 +290,25 @@ class TestCallbackAuth:
             await callback.handle_callback(self._update(1), self._ctx(True))
             status.assert_called_once()
 
+    async def test_callback_without_any_message_answers_via_alert(self):
+        """effective_message can be None (keyboard's message deleted): the user
+        still gets a visible answer through the callback bubble, not silence."""
+        from src.bot.handlers import callback
+
+        upd = self._update(1)
+        upd.message = None
+        upd.effective_message = None
+        ctx = self._ctx(True)
+        ctx.bot_data["claude_facade"] = None
+        ctx.bot_data["storage"] = None
+        await callback.handle_callback(upd, ctx)
+        alerts = [
+            c
+            for c in upd.callback_query.answer.await_args_list
+            if c.kwargs.get("show_alert")
+        ]
+        assert len(alerts) == 1
+
     async def test_callback_reaches_real_command_without_message(self):
         """A button press has no update.message: the real cmd_status must still
         answer through effective_message instead of raising AttributeError."""

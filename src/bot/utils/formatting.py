@@ -11,6 +11,7 @@ import re
 from typing import Any, List
 
 from telegram import Message
+from telegram.error import BadRequest
 
 from .constants import MESSAGE_CHUNK_SIZE
 
@@ -148,14 +149,26 @@ async def send_claude_reply(
     text (never the rendered form: escape residue must not reach the user).
     """
     chunks = split_message(content or "(no response)")
-    for chunk in chunks:
+    for index, chunk in enumerate(chunks):
         rendered = claude_to_telegram_html(chunk)
         try:
             await message.reply_text(rendered, parse_mode="HTML")
-        except Exception as send_exc:
+        except BadRequest as send_exc:
+            # Only a parse rejection earns the plain-text retry. A TimedOut or
+            # RetryAfter may mean Telegram already accepted the message; resending
+            # would duplicate it (or hit the flood limit twice), so those propagate.
             logger.warning(
                 "HTML reply failed, falling back to plain text",
                 error=str(send_exc),
                 error_type=type(send_exc).__name__,
             )
             await message.reply_text(chunk, parse_mode=None)
+        except Exception as send_exc:
+            logger.error(
+                "Reply delivery stopped part-way",
+                delivered=index,
+                total=len(chunks),
+                error=str(send_exc),
+                error_type=type(send_exc).__name__,
+            )
+            raise

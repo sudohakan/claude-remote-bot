@@ -125,11 +125,18 @@ def _reply(update: Update) -> Callable[..., Awaitable[object]]:
     msg = update.effective_message
     if msg is None:
         logger.warning("No message to reply to", update_id=update.update_id)
+        query = update.callback_query
 
-        async def _noop(*_args: object, **_kwargs: object) -> None:
-            return None
+        async def _fallback(text: str, *_args: object, **_kwargs: object) -> None:
+            # The keyboard's message is gone (deleted/too old): the only channel
+            # left is the callback answer bubble, so the user still sees something.
+            if query is not None:
+                await query.answer(
+                    "Original message is gone; send the command again.",
+                    show_alert=True,
+                )
 
-        return _noop
+        return _fallback
     return msg.reply_text
 
 

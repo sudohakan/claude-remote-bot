@@ -43,7 +43,7 @@ make run           # start bot
 
 - Claude output reaches Telegram through one function only: `send_claude_reply` (`src/bot/utils/formatting.py`). It chunks to the Telegram limit without splitting code blocks, renders Telegram HTML (`<pre><code>`, `<code>`, bold/italic, everything else escaped) and, if Telegram rejects the HTML, sends the same raw chunk as plain text. Handlers must not call `reply_text` with Claude content themselves — `tests/test_reply_format.py` patches the name in each handler module and fails if one bypasses it.
 - Status and error messages are built with `M.compose(M.header(ICON, title), body)` from `src/bot/utils/messages.py`.
-- User-facing text is English (the repo is public); commands reply through `update.effective_message` so inline-keyboard callbacks (no `update.message`) work too.
+- User-facing text is English (the repo is public). The three commands reachable from inline-keyboard callbacks (`/new`, `/status`, `/help`) reply through `_reply(update)` (`effective_message`) because a callback update has no `update.message`; the other commands still use `update.message` — route a new button's target through `_reply` before wiring it.
 
 ## Notification Rules
 

@@ -11,12 +11,11 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from telegram.error import BadRequest, TimedOut
 
 from src.bot.utils.formatting import send_claude_reply
 
-
-class _Reject(Exception):
-    """Stands in for telegram.error.BadRequest ('can't parse entities')."""
+_Reject = BadRequest  # Telegram's answer to unparsable HTML entities
 
 
 # ── (a) fallback contract ───────────────────────────────────────────────────
@@ -37,6 +36,18 @@ async def test_html_rejected_falls_back_to_same_plain_chunk():
     assert second.kwargs["parse_mode"] is None
     assert second.args[0] == content  # raw chunk, not the escaped render
     logger.warning.assert_called_once()
+
+
+async def test_timed_out_is_not_resent_as_plain_text():
+    """TimedOut may mean Telegram already accepted the message: no duplicate."""
+    message = MagicMock()
+    message.reply_text = AsyncMock(side_effect=TimedOut())
+    logger = MagicMock()
+    with pytest.raises(TimedOut):
+        await send_claude_reply(message, "a\n\nb", logger=logger)
+    assert message.reply_text.await_count == 1
+    logger.error.assert_called_once()
+    assert logger.error.call_args.kwargs["delivered"] == 0
 
 
 async def test_html_accepted_sends_once():

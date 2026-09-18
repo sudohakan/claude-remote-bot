@@ -43,6 +43,42 @@ class ClaudeResponse:
     error_type: Optional[str] = None
 
 
+async def _kill_process(proc: Optional[asyncio.subprocess.Process]) -> None:
+    """Terminate the in-flight CLI subprocess, escalating to SIGKILL.
+
+    Best-effort: a process that already exited raises ProcessLookupError,
+    which is the success case, not an error.
+    """
+    if proc is None or proc.returncode is not None:
+        return
+    # Signal the whole group, not just the CLI: a `claude` run spawns MCP
+    # servers (bun, python, node) as children, and terminating only the
+    # parent leaves those running forever. start_new_session=True at spawn
+    # makes the CLI its own group leader so killpg reaches all of them.
+    try:
+        pgid = os.getpgid(proc.pid)
+    except (ProcessLookupError, PermissionError):
+        pgid = None
+
+    def _signal(sig: int) -> None:
+        if pgid is not None:
+            os.killpg(pgid, sig)
+        else:
+            proc.kill() if sig == signal.SIGKILL else proc.terminate()
+
+    try:
+        _signal(signal.SIGTERM)
+        try:
+            await asyncio.wait_for(proc.wait(), timeout=5)
+        except asyncio.TimeoutError:
+            _signal(signal.SIGKILL)
+            await proc.wait()
+    except ProcessLookupError:
+        pass
+    except Exception as exc:  # pragma: no cover — reaping must not mask timeout
+        logger.warning("Failed to reap Claude subprocess", error=str(exc))
+
+
 class ClaudeSDKRunner:
     """Execute Claude prompts via SDK or CLI subprocess.
 
@@ -63,8 +99,6 @@ class ClaudeSDKRunner:
         self._max_turns = max_turns
         self._timeout = timeout_seconds
         self._cli = cli_path or "claude"
-        # Handle on the in-flight CLI subprocess so a timeout can reap it.
-        self._active_proc: Optional[asyncio.subprocess.Process] = None
 
         if anthropic_api_key:
             os.environ["ANTHROPIC_API_KEY"] = anthropic_api_key
@@ -89,12 +123,21 @@ class ClaudeSDKRunner:
         """
         start = asyncio.get_event_loop().time()
 
+        # Per-call handle: the runner is one shared instance serving up to
+        # _CONCURRENT_LIMIT users at once, so an instance-level slot would let
+        # a second request blank the first one's handle (nothing gets killed) or
+        # a timeout kill the wrong user's process. The holder travels with the call.
+        holder: Dict[str, Optional[asyncio.subprocess.Process]] = {"proc": None}
         async with _semaphore:
-            self._active_proc = None
             try:
                 response = await asyncio.wait_for(
                     self._execute(
-                        prompt, working_dir, session_id, continue_session, full_access
+                        prompt,
+                        working_dir,
+                        session_id,
+                        continue_session,
+                        full_access,
+                        holder,
                     ),
                     timeout=self._timeout,
                 )
@@ -103,7 +146,7 @@ class ClaudeSDKRunner:
                 # wait_for only cancels the awaiting coroutine — the spawned
                 # `claude` process survives as an orphan, keeps consuming tokens
                 # and RAM, and its result is discarded. Kill it explicitly.
-                await self._kill_active()
+                await _kill_process(holder["proc"])
                 logger.warning(
                     "Claude timed out",
                     timeout_s=self._timeout,
@@ -115,47 +158,9 @@ class ClaudeSDKRunner:
                 raise ClaudeTimeoutError(
                     f"Claude timed out after {self._timeout}s"
                 ) from None
-            finally:
-                self._active_proc = None
 
         response.duration_ms = int((asyncio.get_event_loop().time() - start) * 1000)
         return response
-
-    async def _kill_active(self) -> None:
-        """Terminate the in-flight CLI subprocess, escalating to SIGKILL.
-
-        Best-effort: a process that already exited raises ProcessLookupError,
-        which is the success case, not an error.
-        """
-        proc = self._active_proc
-        if proc is None or proc.returncode is not None:
-            return
-        # Signal the whole group, not just the CLI: a `claude` run spawns MCP
-        # servers (bun, python, node) as children, and terminating only the
-        # parent leaves those running forever. start_new_session=True at spawn
-        # makes the CLI its own group leader so killpg reaches all of them.
-        try:
-            pgid = os.getpgid(proc.pid)
-        except (ProcessLookupError, PermissionError):
-            pgid = None
-
-        def _signal(sig: int) -> None:
-            if pgid is not None:
-                os.killpg(pgid, sig)
-            else:
-                proc.kill() if sig == signal.SIGKILL else proc.terminate()
-
-        try:
-            _signal(signal.SIGTERM)
-            try:
-                await asyncio.wait_for(proc.wait(), timeout=5)
-            except asyncio.TimeoutError:
-                _signal(signal.SIGKILL)
-                await proc.wait()
-        except ProcessLookupError:
-            pass
-        except Exception as exc:  # pragma: no cover — reaping must not mask timeout
-            logger.warning("Failed to reap Claude subprocess", error=str(exc))
 
     async def _execute(
         self,
@@ -164,6 +169,7 @@ class ClaudeSDKRunner:
         session_id: Optional[str],
         continue_session: bool,
         full_access: bool = False,
+        holder: Optional[Dict[str, Optional[asyncio.subprocess.Process]]] = None,
     ) -> ClaudeResponse:
         """Try SDK, fall back to CLI.
 
@@ -178,7 +184,7 @@ class ClaudeSDKRunner:
         # the bundled CLI 2.1.88 returns exit 1 under the sandboxed env, and
         # the simple JSON `--output-format json -p` mode works reliably in both.
         return await self._run_cli(
-            prompt, working_dir, session_id, full_access=full_access
+            prompt, working_dir, session_id, full_access=full_access, holder=holder
         )
 
     async def _run_sdk(
@@ -244,6 +250,7 @@ class ClaudeSDKRunner:
         working_dir: Path,
         session_id: Optional[str],
         full_access: bool = False,
+        holder: Optional[Dict[str, Optional[asyncio.subprocess.Process]]] = None,
     ) -> ClaudeResponse:
         """Execute via claude CLI subprocess.
 
@@ -283,7 +290,8 @@ class ClaudeSDKRunner:
                 env=subprocess_env,
                 start_new_session=True,
             )
-            self._active_proc = proc
+            if holder is not None:
+                holder["proc"] = proc
             stdout, stderr = await proc.communicate()
         except FileNotFoundError:
             raise ClaudeProcessError(
@@ -301,7 +309,7 @@ class ClaudeSDKRunner:
                     "Stale session, retrying without resume", session_id=session_id
                 )
                 return await self._run_cli(
-                    prompt, working_dir, None, full_access=full_access
+                    prompt, working_dir, None, full_access=full_access, holder=holder
                 )
             raise ClaudeProcessError(f"Claude CLI error (rc={proc.returncode}): {err}")
 
