@@ -24,6 +24,7 @@ Admin-only commands:
 """
 
 import os
+from typing import Awaitable, Callable
 
 import structlog
 from telegram import Update
@@ -114,6 +115,24 @@ async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         )
 
 
+def _reply(update: Update) -> Callable[..., Awaitable[object]]:
+    """Reply target that works for both message and callback-query updates.
+
+    A button press carries no ``update.message``; ``effective_message`` is the
+    message the keyboard was attached to. Returns a no-op sender when neither
+    exists (e.g. an inaccessible message) so commands never raise here.
+    """
+    msg = update.effective_message
+    if msg is None:
+        logger.warning("No message to reply to", update_id=update.update_id)
+
+        async def _noop(*_args: object, **_kwargs: object) -> None:
+            return None
+
+        return _noop
+    return msg.reply_text
+
+
 # ── /help ─────────────────────────────────────────────────────────────────────
 
 
@@ -159,7 +178,7 @@ async def cmd_help(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         ]
         blocks.append(M.section("Admin commands", "\n".join(admin_lines)))
 
-    await update.message.reply_text(M.compose(*blocks), parse_mode="HTML")
+    await _reply(update)(M.compose(*blocks), parse_mode="HTML")
 
 
 # ── /about ────────────────────────────────────────────────────────────────────
@@ -228,11 +247,9 @@ async def cmd_new(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
             access_level=access_level,
             username=user.username,
         )
-        await update.message.reply_text(M.msg_session_started(), parse_mode="HTML")
+        await _reply(update)(M.msg_session_started(), parse_mode="HTML")
     else:
-        await update.message.reply_text(
-            M.msg_unavailable("Claude bridge"), parse_mode="HTML"
-        )
+        await _reply(update)(M.msg_unavailable("Claude bridge"), parse_mode="HTML")
 
 
 # ── /status ───────────────────────────────────────────────────────────────────
@@ -276,7 +293,7 @@ async def cmd_status(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     if session_block:
         blocks.append(session_block)
 
-    await update.message.reply_text(M.compose(*blocks), parse_mode="HTML")
+    await _reply(update)(M.compose(*blocks), parse_mode="HTML")
 
 
 # ── /ssh ─────────────────────────────────────────────────────────────────────

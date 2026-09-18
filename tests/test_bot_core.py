@@ -290,6 +290,21 @@ class TestCallbackAuth:
             await callback.handle_callback(self._update(1), self._ctx(True))
             status.assert_called_once()
 
+    async def test_callback_reaches_real_command_without_message(self):
+        """A button press has no update.message: the real cmd_status must still
+        answer through effective_message instead of raising AttributeError."""
+        from src.bot.handlers import callback
+
+        upd = self._update(1)
+        upd.message = None  # callback_query updates never carry .message
+        upd.effective_message.reply_text = AsyncMock()
+        ctx = self._ctx(True)
+        ctx.bot_data["claude_facade"] = None
+        ctx.bot_data["storage"] = None
+        await callback.handle_callback(upd, ctx)
+        upd.effective_message.reply_text.assert_called_once()
+        assert upd.effective_message.reply_text.call_args.kwargs["parse_mode"] == "HTML"
+
     async def test_missing_access_manager_fails_closed(self):
         from src.bot.handlers import callback
 
