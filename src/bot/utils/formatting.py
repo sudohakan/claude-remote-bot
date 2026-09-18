@@ -8,7 +8,9 @@ Key responsibilities:
 
 import html
 import re
-from typing import List
+from typing import Any, List
+
+from telegram import Message
 
 from .constants import MESSAGE_CHUNK_SIZE
 
@@ -134,3 +136,26 @@ def format_user_info(user_id: int, username: str | None, role: str, access: str)
         f"  Role: <code>{escape_html(role)}</code>\n"
         f"  Access: <code>{escape_html(access)}</code>"
     )
+
+
+async def send_claude_reply(
+    message: Message, content: str | None, *, logger: Any
+) -> None:
+    """The one way a Claude reply reaches Telegram (text, document, photo, media).
+
+    Contract: chunk to the Telegram limit without splitting code blocks, render as
+    Telegram HTML, and if Telegram rejects the HTML send the SAME chunk as plain
+    text (never the rendered form: escape residue must not reach the user).
+    """
+    chunks = split_message(content or "(no response)")
+    for chunk in chunks:
+        rendered = claude_to_telegram_html(chunk)
+        try:
+            await message.reply_text(rendered, parse_mode="HTML")
+        except Exception as send_exc:
+            logger.warning(
+                "HTML reply failed, falling back to plain text",
+                error=str(send_exc),
+                error_type=type(send_exc).__name__,
+            )
+            await message.reply_text(chunk, parse_mode=None)

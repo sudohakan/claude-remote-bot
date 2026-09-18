@@ -18,7 +18,7 @@ import structlog
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from src.bot.utils.formatting import claude_to_telegram_html, split_message
+from src.bot.utils.formatting import send_claude_reply
 from src.claude.exceptions import ClaudeError, ClaudeTimeoutError
 
 logger = structlog.get_logger(__name__)
@@ -161,16 +161,4 @@ async def handle_document(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> Non
             CommandLogModel(user_id=user.id, command="<document>", result="ok")
         )
 
-    # Send response in chunks if needed
-    chunks = split_message(response.content or "(no response)")
-    for chunk in chunks:
-        rendered = claude_to_telegram_html(chunk)
-        try:
-            await message.reply_text(rendered, parse_mode="HTML")
-        except Exception as send_exc:
-            logger.warning(
-                "HTML reply failed, falling back to plain text",
-                error=str(send_exc),
-                error_type=type(send_exc).__name__,
-            )
-            await message.reply_text(chunk, parse_mode=None)
+    await send_claude_reply(message, response.content, logger=logger)
