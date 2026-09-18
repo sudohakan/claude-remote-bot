@@ -51,3 +51,6 @@ graphify-out/
 
 # editor/auto backup artifacts
 *.bak-*
+*.pem
+*.key
+credentials*
