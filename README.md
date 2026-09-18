@@ -14,13 +14,13 @@ SDK-first AI bridge · invite-token auth · SSH tunnel management · system moni
 [![CI](https://img.shields.io/github/actions/workflow/status/sudohakan/claude-remote-bot/ci.yml?style=flat-square&label=CI)](https://github.com/sudohakan/claude-remote-bot/actions)
 [![Stars](https://img.shields.io/github/stars/sudohakan/claude-remote-bot?style=flat-square)](https://github.com/sudohakan/claude-remote-bot/stargazers)
 
-[Quick Start](#quick-start) · [Features](#features) · [Commands](#commands) · [Architecture](#architecture) · [Configuration](#configuration) · [Contributing](#contributing)
+[Quick Start](#install) · [Features](#features) · [Commands](#usage) · [Architecture](#architecture) · [Configuration](#configuration) · [Contributing](#development)
 
 </div>
 
 ---
 
-## Why Claude Remote Bot?
+## What it does
 
 > Send a message from your phone, get Claude Code responses back. Manage SSH tunnels, monitor your system, upload files for analysis, export sessions: all from Telegram, with role-based access and cost controls baked in.
 
@@ -39,7 +39,7 @@ SDK-first AI bridge · invite-token auth · SSH tunnel management · system moni
 
 ---
 
-## Quick Start
+## Install
 
 **1. Create a Telegram bot**
 
@@ -144,7 +144,7 @@ Silent by default. State-change-only firing, 5-minute dedup windows, one startup
 
 ---
 
-## Commands
+## Usage
 
 ### All Users
 
@@ -332,7 +332,7 @@ All settings loaded from `.env`. Copy `.env.example` to get started.
 
 ---
 
-## Contributing
+## Development
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for full guidelines.
 
