@@ -169,7 +169,8 @@ async def cmd_jarvis(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     if not _is_owner(update, ctx):
         await update.message.reply_text(M.msg_admin_only(), parse_mode="HTML")
         return
-    body = " ".join((update.message.text or "").split()[1:]).strip()
+    # one line, no control characters: the text is typed into a terminal
+    body = re.sub(r"[\x00-\x1f\x7f]", " ", " ".join((update.message.text or "").split()[1:])).strip()
     if not body:
         await update.message.reply_text(JARVIS_USAGE, parse_mode="HTML")
         return

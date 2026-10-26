@@ -144,3 +144,13 @@ async def test_jarvis_busy_empty_and_non_owner():
         with patch.object(A, "_run_auto", new=AsyncMock()) as run:
             await A.cmd_jarvis(upd, ctx)
         run.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_jarvis_body_is_one_line_without_control_chars():
+    upd = _update(7, "/j satır\x1b[2J bir\x03 iki")
+    with patch.object(A, "_run_auto", new=AsyncMock(return_value=(0, ""))) as run:
+        await A.cmd_jarvis(upd, _ctx())
+    sent = run.call_args.args[0][1]
+    assert "\x1b" not in sent and "\x03" not in sent
+    assert sent.startswith("[Telegram] satır")
