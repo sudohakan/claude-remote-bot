@@ -22,7 +22,9 @@ def minimal_settings(tmp_path):
     """Settings instance with safe test values."""
     from src.config.settings import Settings
 
+    # _env_file=None: the live .env (CLAUDE_MAX_TURNS=60 and the like) must not decide what a default test sees
     return Settings(
+        _env_file=None,
         telegram_bot_token="1234567890:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
         admin_telegram_id=999888777,
         database_url=f"sqlite:///{tmp_path / 'test.db'}",
