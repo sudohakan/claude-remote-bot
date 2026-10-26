@@ -19,6 +19,7 @@ from telegram.error import TelegramError
 
 from src.events.bus import Event, EventBus
 from src.events.types import AgentResponseEvent
+from src.notifications.humanize import humanize
 
 logger = structlog.get_logger(__name__)
 
@@ -141,7 +142,7 @@ class NotificationService:
         text: str,
         parse_mode: Optional[str] = "HTML",
     ) -> None:
-        chunks = self._split(text)
+        chunks = self._split(await humanize(text))
         pm = ParseMode.HTML if parse_mode == "HTML" else None
         for chunk in chunks:
             try:

@@ -12,6 +12,7 @@ def set_required_env(monkeypatch):
         "TELEGRAM_BOT_TOKEN": "1234567890:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
         "ADMIN_TELEGRAM_ID": "999888777",
     }
+    monkeypatch.setenv("TG_HUMANIZE", "0")  # tests never reach the local model
     for key, value in defaults.items():
         if key not in os.environ:
             monkeypatch.setenv(key, value)
