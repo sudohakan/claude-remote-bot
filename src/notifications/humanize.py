@@ -1,5 +1,6 @@
 """Every message the bot sends to Hakan on its own (notifications, tunnel notices) passes the shared humanizer
-in ~/.claude/scripts/lib/tg_humanize.py (local model, fail-soft: on any problem the original text goes out)."""
+in ~/.claude/scripts/lib/tg_humanize.py (local model, fail-soft: on any problem the original text goes out).
+"""
 
 import asyncio
 import os

@@ -115,7 +115,9 @@ class BotOrchestrator:
         app.add_handler(CommandHandler("auto", cmd_auto))
         app.add_handler(CommandHandler("ack", cmd_ack))
         # new messages only: editing an old /j would relay it to Jarvis again
-        app.add_handler(CommandHandler("j", cmd_jarvis, filters=filters.UpdateType.MESSAGE))
+        app.add_handler(
+            CommandHandler("j", cmd_jarvis, filters=filters.UpdateType.MESSAGE)
+        )
         app.add_handler(CommandHandler("alerts", cmd_alerts))
         app.add_handler(CommandHandler("limit", cmd_limit))
 

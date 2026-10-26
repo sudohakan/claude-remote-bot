@@ -16,15 +16,26 @@ NOW = datetime(2026, 10, 26, 10, 40, 5)
 
 
 def test_parse_add_default_area():
-    assert A.parse_auto_args("HCD loglarını tara") == {"action": "add", "area": "claude-stack", "task": "HCD loglarını tara"}
+    assert A.parse_auto_args("HCD loglarını tara") == {
+        "action": "add",
+        "area": "claude-stack",
+        "task": "HCD loglarını tara",
+    }
 
 
 def test_parse_area_prefix():
-    assert A.parse_auto_args("alan:HCD finans sayfasını ölç") == {"action": "add", "area": "hcd", "task": "finans sayfasını ölç"}
+    assert A.parse_auto_args("alan:HCD finans sayfasını ölç") == {
+        "action": "add",
+        "area": "hcd",
+        "task": "finans sayfasını ölç",
+    }
 
 
 def test_parse_status_and_usage():
-    assert A.parse_auto_args("durum tg-20261026-104005") == {"action": "status", "job_id": "tg-20261026-104005"}
+    assert A.parse_auto_args("durum tg-20261026-104005") == {
+        "action": "status",
+        "job_id": "tg-20261026-104005",
+    }
     assert A.parse_auto_args("durum ; rm -rf") == {"action": "usage"}
     assert A.parse_auto_args("") == {"action": "usage"}
     assert A.parse_auto_args("alan:hcd   ") == {"action": "usage"}
@@ -44,15 +55,28 @@ def test_build_job_truncates_long_title():
     assert len(job["title"]) == len("Telegram: ") + A.TITLE_MAX
 
 
-@pytest.mark.skipif(not shutil.which(A.AUTO_BIN) and not os.path.exists(A.AUTO_BIN), reason="auto CLI yok")
+@pytest.mark.skipif(
+    not shutil.which(A.AUTO_BIN) and not os.path.exists(A.AUTO_BIN),
+    reason="auto CLI yok",
+)
 def test_job_passes_real_validator(tmp_path):
-    env = {**os.environ, "AUTONOMY_STATE_DIR": str(tmp_path), "AUTONOMY_ALERTS_PATH": str(tmp_path / "a.log"),
-           }
+    env = {
+        **os.environ,
+        "AUTONOMY_STATE_DIR": str(tmp_path),
+        "AUTONOMY_ALERTS_PATH": str(tmp_path / "a.log"),
+    }
     subprocess.run([A.AUTO_BIN, "seed"], env=env, check=True, capture_output=True)
     env["AUTONOMY_ACTOR"] = "telegram:1"
     job_file = tmp_path / "job.json"
-    job_file.write_text(json.dumps(A.build_job("stack loglarını özetle", "claude-stack", 1, NOW), ensure_ascii=False))
-    r = subprocess.run([A.AUTO_BIN, "add", str(job_file)], env=env, capture_output=True, text=True)
+    job_file.write_text(
+        json.dumps(
+            A.build_job("stack loglarını özetle", "claude-stack", 1, NOW),
+            ensure_ascii=False,
+        )
+    )
+    r = subprocess.run(
+        [A.AUTO_BIN, "add", str(job_file)], env=env, capture_output=True, text=True
+    )
     assert r.returncode == 0, r.stdout + r.stderr
     assert "tg-20261026-104005" in r.stdout
 
@@ -64,7 +88,12 @@ def _update(user_id, text):
 
 def _ctx(admin_id=7, is_admin=False):
     access = SimpleNamespace(is_admin=AsyncMock(return_value=is_admin))
-    return SimpleNamespace(bot_data={"settings": SimpleNamespace(admin_telegram_id=admin_id), "access_manager": access})
+    return SimpleNamespace(
+        bot_data={
+            "settings": SimpleNamespace(admin_telegram_id=admin_id),
+            "access_manager": access,
+        }
+    )
 
 
 @pytest.mark.asyncio
@@ -87,7 +116,9 @@ async def test_promoted_admin_rejected():
 @pytest.mark.asyncio
 async def test_admin_add_calls_auto_add_with_telegram_actor():
     upd = _update(7, "/auto alan:hcd panel hatasını incele")
-    with patch.object(A, "_run_auto", new=AsyncMock(return_value=(0, "iş eklendi"))) as run:
+    with patch.object(
+        A, "_run_auto", new=AsyncMock(return_value=(0, "iş eklendi"))
+    ) as run:
         await A.cmd_auto(upd, _ctx())
     args, user_id = run.call_args.args
     assert args[0] == "add" and user_id == 7
@@ -105,7 +136,9 @@ async def test_auto_failure_is_reported():
 @pytest.mark.asyncio
 async def test_ack_owner_runs_jarvis_ack():
     upd = _update(7, "/ack")
-    with patch.object(A, "_run_auto", new=AsyncMock(return_value=(0, "1 ulaşma onaylandı"))) as run:
+    with patch.object(
+        A, "_run_auto", new=AsyncMock(return_value=(0, "1 ulaşma onaylandı"))
+    ) as run:
         await A.cmd_ack(upd, _ctx())
     assert run.call_args.args == (["ack"], 7, A.JARVIS_BIN)
     assert "1 ulaşma onaylandı" in upd.message.reply_text.call_args.args[0]
@@ -125,7 +158,11 @@ async def test_jarvis_owner_relays_signed_with_telegram_prefix():
     upd = _update(7, "/j  Başak'ı kapat ")
     with patch.object(A, "_run_auto", new=AsyncMock(return_value=(0, ""))) as run:
         await A.cmd_jarvis(upd, _ctx())
-    assert run.call_args.args == (["relay", "[Telegram] Başak'ı kapat"], 7, A.JARVIS_BIN)
+    assert run.call_args.args == (
+        ["relay", "[Telegram] Başak'ı kapat"],
+        7,
+        A.JARVIS_BIN,
+    )
     assert "iletildi" in upd.message.reply_text.call_args.args[0]
 
 
