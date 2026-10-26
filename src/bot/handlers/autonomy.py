@@ -156,3 +156,34 @@ async def cmd_ack(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text(f"⚠️ Onay verilemedi (kod {code}):\n<pre>{escape_html(out[-400:])}</pre>",
                                         parse_mode="HTML")
 
+
+
+JARVIS_USAGE = "Kullanım: <code>/j &lt;mesaj&gt;</code> Jarvis'e yazar, cevabı buraya gelir."
+RELAY_BUSY = 3
+
+
+async def cmd_jarvis(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
+    """/j <mesaj>: write to Jarvis as Hakan. `jarvis relay` signs it as user-relay; owner only."""
+    if update.effective_user is None or update.message is None:
+        return
+    if not _is_owner(update, ctx):
+        await update.message.reply_text(M.msg_admin_only(), parse_mode="HTML")
+        return
+    body = " ".join((update.message.text or "").split()[1:]).strip()
+    if not body:
+        await update.message.reply_text(JARVIS_USAGE, parse_mode="HTML")
+        return
+    try:
+        code, out = await _run_auto(["relay", f"[Telegram] {body}"], update.effective_user.id, JARVIS_BIN)
+    except asyncio.TimeoutError:
+        await update.message.reply_text(f"⚠️ jarvis relay {AUTO_TIMEOUT_SEC} sn içinde bitmedi.", parse_mode="HTML")
+        return
+    except OSError as err:
+        await update.message.reply_text(f"⚠️ jarvis çalıştırılamadı: {escape_html(str(err))}", parse_mode="HTML")
+        return
+    if code == 0:
+        await update.message.reply_text("📨 Jarvis'e iletildi, cevabı buraya gelecek.", parse_mode="HTML")
+    elif code == RELAY_BUSY:
+        await update.message.reply_text("⚠️ Jarvis'in giriş kutusunda yazı var ya da oturum açık değil; birazdan tekrar dene.", parse_mode="HTML")
+    else:
+        await update.message.reply_text(f"⚠️ İletilemedi (kod {code}):\n<pre>{escape_html(out[-400:])}</pre>", parse_mode="HTML")

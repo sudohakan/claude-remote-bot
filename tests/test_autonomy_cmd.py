@@ -118,3 +118,29 @@ async def test_ack_non_owner_and_promoted_rejected():
         with patch.object(A, "_run_auto", new=AsyncMock()) as run:
             await A.cmd_ack(upd, ctx)
         run.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_jarvis_owner_relays_signed_with_telegram_prefix():
+    upd = _update(7, "/j  Başak'ı kapat ")
+    with patch.object(A, "_run_auto", new=AsyncMock(return_value=(0, ""))) as run:
+        await A.cmd_jarvis(upd, _ctx())
+    assert run.call_args.args == (["relay", "[Telegram] Başak'ı kapat"], 7, A.JARVIS_BIN)
+    assert "iletildi" in upd.message.reply_text.call_args.args[0]
+
+
+@pytest.mark.asyncio
+async def test_jarvis_busy_empty_and_non_owner():
+    upd = _update(7, "/j selam")
+    with patch.object(A, "_run_auto", new=AsyncMock(return_value=(3, ""))):
+        await A.cmd_jarvis(upd, _ctx())
+    assert "giriş kutusunda" in upd.message.reply_text.call_args.args[0]
+    upd = _update(7, "/j")
+    with patch.object(A, "_run_auto", new=AsyncMock()) as run:
+        await A.cmd_jarvis(upd, _ctx())
+    run.assert_not_called()
+    for ctx in (_ctx(), _ctx(is_admin=True)):
+        upd = _update(99, "/j sil her şeyi")
+        with patch.object(A, "_run_auto", new=AsyncMock()) as run:
+            await A.cmd_jarvis(upd, ctx)
+        run.assert_not_called()

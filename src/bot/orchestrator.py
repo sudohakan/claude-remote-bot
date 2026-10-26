@@ -12,7 +12,7 @@ from telegram.ext import (
     filters,
 )
 
-from .handlers.autonomy import cmd_ack, cmd_auto
+from .handlers.autonomy import cmd_ack, cmd_auto, cmd_jarvis
 from .handlers.callback import handle_callback
 from .handlers.command import (
     cmd_about,
@@ -75,6 +75,7 @@ _ADMIN_EXTRA_COMMANDS = [
     BotCommand("epic", "Admin: fresh Epic free-game claim link"),
     BotCommand("auto", "Admin: otonom kuyruğa tek seferlik iş"),
     BotCommand("ack", "Admin: Jarvis acil uyarısını onayla"),
+    BotCommand("j", "Admin: Jarvis'e yaz"),
 ]
 
 
@@ -113,6 +114,7 @@ class BotOrchestrator:
         app.add_handler(CommandHandler("epic", cmd_epic))
         app.add_handler(CommandHandler("auto", cmd_auto))
         app.add_handler(CommandHandler("ack", cmd_ack))
+        app.add_handler(CommandHandler("j", cmd_jarvis))
         app.add_handler(CommandHandler("alerts", cmd_alerts))
         app.add_handler(CommandHandler("limit", cmd_limit))
 
