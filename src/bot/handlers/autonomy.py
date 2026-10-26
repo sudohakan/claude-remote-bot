@@ -19,6 +19,7 @@ from src.bot.utils import messages as M
 from src.bot.utils.formatting import escape_html
 
 AUTO_BIN = os.environ.get("AUTONOMY_CLI", "/home/hakan/.local/bin/auto")
+JARVIS_BIN = os.environ.get("JARVIS_CLI", "/home/hakan/.local/bin/jarvis")
 DEFAULT_AREA = "claude-stack"
 AUTO_TIMEOUT_SEC = 60
 TITLE_MAX = 80
@@ -70,10 +71,10 @@ def build_job(task: str, area: str, user_id: int, now: datetime) -> dict:
     }
 
 
-async def _run_auto(args: list[str], user_id: int) -> tuple[int, str]:
+async def _run_auto(args: list[str], user_id: int, binary: str = AUTO_BIN) -> tuple[int, str]:
     env = {**os.environ, "AUTONOMY_ACTOR": f"telegram:{user_id}"}
     proc = await asyncio.create_subprocess_exec(
-        AUTO_BIN, *args, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT, env=env,
+        binary, *args, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT, env=env,
     )
     out, _ = await asyncio.wait_for(proc.communicate(), timeout=AUTO_TIMEOUT_SEC)
     return proc.returncode, (out or b"").decode(errors="replace").strip()
@@ -132,3 +133,26 @@ async def cmd_auto(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
             await update.message.reply_text(USAGE, parse_mode="HTML")
     except asyncio.TimeoutError:
         await update.message.reply_text(f"⚠️ auto komutu {AUTO_TIMEOUT_SEC} sn içinde bitmedi.", parse_mode="HTML")
+
+
+async def cmd_ack(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
+    """/ack: Hakan saw a Jarvis escalation on Telegram; `jarvis ack` stops the ladder. Owner only."""
+    if update.effective_user is None or update.message is None:
+        return
+    if not _is_owner(update, ctx):
+        await update.message.reply_text(M.msg_admin_only(), parse_mode="HTML")
+        return
+    try:
+        code, out = await _run_auto(["ack"], update.effective_user.id, JARVIS_BIN)
+    except asyncio.TimeoutError:
+        await update.message.reply_text(f"⚠️ jarvis ack {AUTO_TIMEOUT_SEC} sn içinde bitmedi.", parse_mode="HTML")
+        return
+    except OSError as err:
+        await update.message.reply_text(f"⚠️ jarvis çalıştırılamadı: {escape_html(str(err))}", parse_mode="HTML")
+        return
+    if code == 0:
+        await update.message.reply_text(f"✅ {escape_html(out or 'Onaylandı.')}", parse_mode="HTML")
+    else:
+        await update.message.reply_text(f"⚠️ Onay verilemedi (kod {code}):\n<pre>{escape_html(out[-400:])}</pre>",
+                                        parse_mode="HTML")
+

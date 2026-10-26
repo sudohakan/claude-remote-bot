@@ -100,3 +100,21 @@ async def test_auto_failure_is_reported():
     with patch.object(A, "_run_auto", new=AsyncMock(return_value=(1, "alan yok: x"))):
         await A.cmd_auto(upd, _ctx())
     assert "İş eklenemedi (kod 1)" in upd.message.reply_text.call_args.args[0]
+
+
+@pytest.mark.asyncio
+async def test_ack_owner_runs_jarvis_ack():
+    upd = _update(7, "/ack")
+    with patch.object(A, "_run_auto", new=AsyncMock(return_value=(0, "1 ulaşma onaylandı"))) as run:
+        await A.cmd_ack(upd, _ctx())
+    assert run.call_args.args == (["ack"], 7, A.JARVIS_BIN)
+    assert "1 ulaşma onaylandı" in upd.message.reply_text.call_args.args[0]
+
+
+@pytest.mark.asyncio
+async def test_ack_non_owner_and_promoted_rejected():
+    for ctx in (_ctx(), _ctx(is_admin=True)):
+        upd = _update(99, "/ack")
+        with patch.object(A, "_run_auto", new=AsyncMock()) as run:
+            await A.cmd_ack(upd, ctx)
+        run.assert_not_called()
