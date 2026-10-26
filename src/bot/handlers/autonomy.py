@@ -1,4 +1,4 @@
-"""/auto: hand a one-off task to the Claude autonomy queue from Telegram (admin only).
+"""/auto: hand a one-off task to the Claude autonomy queue from Telegram (owner only, not promoted admins).
 
 `/auto <metin>` writes a oneshot claude job and adds it with `auto add`; `/auto alan:<id> <metin>` picks the
 area (default claude-stack); `/auto durum <id>` shows the job. The bot never sets authority or human-only
@@ -79,13 +79,10 @@ async def _run_auto(args: list[str], user_id: int) -> tuple[int, str]:
     return proc.returncode, (out or b"").decode(errors="replace").strip()
 
 
-async def _is_admin(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> bool:
-    user = update.effective_user
+def _is_owner(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> bool:
+    """Only the owner's Telegram id: admins promoted with /promote must not queue autonomous runs."""
     settings = ctx.bot_data.get("settings")
-    access = ctx.bot_data.get("access_manager")
-    if settings and user.id == settings.admin_telegram_id:
-        return True
-    return bool(access and await access.is_admin(user.id))
+    return bool(settings) and update.effective_user.id == settings.admin_telegram_id
 
 
 async def _add(update: Update, area: str, task: str) -> None:
@@ -121,7 +118,7 @@ async def _status(update: Update, job_id: str) -> None:
 async def cmd_auto(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     if update.effective_user is None or update.message is None:
         return
-    if not await _is_admin(update, ctx):
+    if not _is_owner(update, ctx):
         await update.message.reply_text(M.msg_admin_only(), parse_mode="HTML")
         return
     text = update.message.text or ""

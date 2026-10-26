@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- `/auto <iş>` (admin only) puts a one-off task on the Claude autonomy queue as a oneshot job; `alan:<id>` picks the area, `/auto durum <id>` shows its runs. The bot writes no authority or human-only field, the area policy decides.
+- `/auto <iş>` (owner only; promoted admins are refused) puts a one-off task on the Claude autonomy queue as a oneshot job; `alan:<id>` picks the area, `/auto durum <id>` shows its runs. The bot writes no authority or human-only field, the area policy decides.
 
 ### Changed
 - Claude replies go through a single sender (`send_claude_reply`): chunked, rendered as Telegram HTML, same chunk re-sent as plain text if Telegram rejects the HTML. All four handlers (text, document, photo, media) use it; a test fails if one bypasses it.

@@ -77,6 +77,14 @@ async def test_non_admin_rejected_without_running_auto():
 
 
 @pytest.mark.asyncio
+async def test_promoted_admin_rejected():
+    upd = _update(99, "/auto bir iş")
+    with patch.object(A, "_run_auto", new=AsyncMock()) as run:
+        await A.cmd_auto(upd, _ctx(is_admin=True))
+    run.assert_not_called()
+
+
+@pytest.mark.asyncio
 async def test_admin_add_calls_auto_add_with_telegram_actor():
     upd = _update(7, "/auto alan:hcd panel hatasını incele")
     with patch.object(A, "_run_auto", new=AsyncMock(return_value=(0, "iş eklendi"))) as run:
