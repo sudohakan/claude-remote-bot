@@ -6,6 +6,7 @@ Supported actions:
   new_session  — same as /new
   show_status  — same as /status
   show_help    — same as /help
+  apr          — Onayla / Reddet under a Jarvis ban approval request (apr:ok|no:<id>)
 """
 
 import structlog
@@ -34,6 +35,13 @@ async def handle_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> Non
     ):
         logger.info("Unauthorised callback", user_id=getattr(user, "id", None))
         await query.answer()
+        return
+
+    # approval buttons answer the query themselves (with the CLI's verdict), so they go before the plain ack
+    if (query.data or "").startswith("apr:"):
+        from src.bot.handlers.autonomy import handle_approval
+
+        await handle_approval(update, ctx)
         return
 
     await query.answer()  # acknowledge the button press

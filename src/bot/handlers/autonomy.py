@@ -190,6 +190,45 @@ async def cmd_ack(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         )
 
 
+APPROVAL_DATA_RE = re.compile(r"^apr:(ok|no):([0-9a-f]{16})$")
+
+
+async def handle_approval(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
+    """Onayla / Reddet under a Jarvis ban request: `jarvis approve|reject <id>` mints or refuses the one-shot
+    token. Owner only; the CLI itself refuses when called from inside a Claude session.
+    """
+    query = update.callback_query
+    if query is None or update.effective_user is None:
+        return
+    m = APPROVAL_DATA_RE.match(query.data or "")
+    if not m or not _is_owner(update, ctx):
+        await query.answer("Bu düğme yalnız sahibin.", show_alert=True)
+        return
+    verb = "approve" if m.group(1) == "ok" else "reject"
+    try:
+        code, out = await _run_auto(
+            [verb, m.group(2)], update.effective_user.id, JARVIS_BIN
+        )
+    except (asyncio.TimeoutError, OSError) as err:
+        await query.answer(f"jarvis çalışmadı: {type(err).__name__}", show_alert=True)
+        return
+    try:
+        await query.answer(out[-180:] or f"kod {code}")
+    except (
+        Exception
+    ):  # a slow CLI outlives the query's answer window; the edit below still reports the verdict
+        pass
+    mark = (
+        ("✅ Onaylandı" if verb == "approve" else "❌ Reddedildi")
+        if code == 0
+        else f"⚠️ {out[-200:]}"
+    )
+    try:
+        await query.edit_message_text(f"{query.message.text}\n\n{mark}")
+    except Exception:  # message too old to edit: the answer above already reached Hakan
+        pass
+
+
 JARVIS_USAGE = (
     "Kullanım: <code>/j &lt;mesaj&gt;</code> Jarvis'e yazar, cevabı buraya gelir."
 )
