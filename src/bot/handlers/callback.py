@@ -22,6 +22,12 @@ async def handle_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> Non
     if query is None:
         return
 
+    logger.info(
+        "Callback received",
+        data=query.data,
+        user_id=getattr(update.effective_user, "id", None),
+    )
+
     # Auth middleware is registered as a MessageHandler, which never matches a
     # callback_query update — so a button press reaches this handler unchecked.
     # A user revoked after receiving a keyboard could still drive /new and
