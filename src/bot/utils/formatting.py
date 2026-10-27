@@ -148,9 +148,13 @@ async def send_claude_reply(
     Telegram HTML, and if Telegram rejects the HTML send the SAME chunk as plain
     text (never the rendered form: escape residue must not reach the user).
     """
+    from src.notifications.sender import BOT_SESSION, labelled
+
     chunks = split_message(content or "(no response)")
-    for index, chunk in enumerate(chunks):
-        rendered = claude_to_telegram_html(chunk)
+    for index, raw in enumerate(chunks):
+        # every part names its sender: Jarvis and services write to Hakan on this bot too
+        chunk = labelled(raw, BOT_SESSION)
+        rendered = labelled(claude_to_telegram_html(raw), BOT_SESSION, html=True)
         try:
             await message.reply_text(rendered, parse_mode="HTML")
         except BadRequest as send_exc:

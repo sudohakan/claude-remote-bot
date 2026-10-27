@@ -18,6 +18,7 @@ from telegram.error import TelegramError
 from src.events.bus import EventBus
 from src.events.types import TunnelRetryExhaustedEvent, TunnelStateChangeEvent
 from src.notifications.humanize import humanize
+from src.notifications.sender import TUNNEL, labelled
 
 logger = structlog.get_logger(__name__)
 
@@ -99,7 +100,7 @@ class TunnelNotifier:
         try:
             await self._bot.send_message(
                 chat_id=self._admin_chat_id,
-                text=await humanize(text),
+                text=await humanize(labelled(text, TUNNEL, html=True)),
                 parse_mode="HTML",
             )
             logger.info("Tunnel notification sent", chat_id=self._admin_chat_id)

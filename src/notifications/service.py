@@ -20,6 +20,7 @@ from telegram.error import TelegramError
 from src.events.bus import Event, EventBus
 from src.events.types import AgentResponseEvent
 from src.notifications.humanize import humanize
+from src.notifications.sender import BOT_SERVICE, BOT_SESSION, labelled
 
 logger = structlog.get_logger(__name__)
 
@@ -133,6 +134,7 @@ class NotificationService:
             chat_id,
             event.text,
             event.parse_mode,
+            head=BOT_SESSION,
         )
         self._last_send[chat_id] = time.monotonic()
 
@@ -141,9 +143,13 @@ class NotificationService:
         chat_id: int,
         text: str,
         parse_mode: Optional[str] = "HTML",
+        head: str = BOT_SERVICE,
     ) -> None:
-        chunks = self._split(await humanize(text))
         pm = ParseMode.HTML if parse_mode == "HTML" else None
+        chunks = [
+            labelled(c, head, html=pm is not None)
+            for c in self._split(await humanize(text), 4096 - len(head) - 8)
+        ]
         for chunk in chunks:
             try:
                 await self.bot.send_message(chat_id=chat_id, text=chunk, parse_mode=pm)

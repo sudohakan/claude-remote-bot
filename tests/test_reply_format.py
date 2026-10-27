@@ -14,6 +14,7 @@ import pytest
 from telegram.error import BadRequest, TimedOut
 
 from src.bot.utils.formatting import send_claude_reply
+from src.notifications.sender import BOT_SESSION
 
 _Reject = BadRequest  # Telegram's answer to unparsable HTML entities
 
@@ -34,7 +35,9 @@ async def test_html_rejected_falls_back_to_same_plain_chunk():
     assert first.kwargs["parse_mode"] == "HTML"
     assert "&lt;uuid&gt;" in first.args[0]  # the HTML render was attempted
     assert second.kwargs["parse_mode"] is None
-    assert second.args[0] == content  # raw chunk, not the escaped render
+    assert (
+        second.args[0] == f"{BOT_SESSION}\n{content}"
+    )  # raw chunk, not the escaped render
     logger.warning.assert_called_once()
 
 
@@ -62,7 +65,9 @@ async def test_empty_content_has_one_placeholder():
     message = MagicMock()
     message.reply_text = AsyncMock()
     await send_claude_reply(message, None, logger=MagicMock())
-    assert message.reply_text.await_args.args[0] == "(no response)"
+    assert (
+        message.reply_text.await_args.args[0] == f"<b>{BOT_SESSION}</b>\n(no response)"
+    )
 
 
 # ── (b) every handler uses the single sender ────────────────────────────────
